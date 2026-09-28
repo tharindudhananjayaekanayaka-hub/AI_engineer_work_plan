@@ -1,12 +1,5 @@
 # AI Engineer Command Center — 90-Day Journey
 
-> **Strict Evidence-Based Learning** | No checkbox ticking | No fake progress
-
-## 🚀 Live Dashboard
-
-**[Open Dashboard →](https://tharindudhananjayaekanayaka-hub.github.io/AI_engineer_work_plan)**
-
----
 
 ## 📊 System Architecture
 
