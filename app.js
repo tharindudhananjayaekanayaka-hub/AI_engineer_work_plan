@@ -872,13 +872,14 @@ function renderSetupScreen() {
   if (window.dismissLoader) window.dismissLoader();
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div id="page-setup" class="page active">
+    <div id="page-setup" class="page active" style="display:flex!important;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px">
       <div class="setup-wrapper fade-in">
         <div class="setup-header">
           <div style="font-size:48px;margin-bottom:16px">🤖</div>
           <h1>AI ENGINEER COMMAND CENTER</h1>
           <p>90-Day Evidence-Based Training System — Let's configure your mission.</p>
         </div>
+
 
         <div class="glass-card" style="padding:28px">
 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Debug — AI CMD</title>
+<style>
+  body { background:#050a0e; color:#00ff96; font-family:monospace; padding:20px; }
+  .ok { color:#00ff96; }
+  .err { color:#ff4444; }
+  .warn { color:#f59e0b; }
+  pre { background:#0a1628; padding:12px; border-radius:8px; white-space:pre-wrap; word-break:break-all; font-size:12px; margin-top:4px; }
+</style>
+</head>
+<body>
+<h2>⚡ AI Engineer CMD Center — Debug Check</h2>
+<div id="out"></div>
+
+<script>
+const out = document.getElementById('out');
+function log(msg, cls='ok') {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.innerHTML = msg;
+  out.appendChild(d);
+}
+
+log('Page loaded ✅');
+
+// 1. Check supabase
+log('<hr><b>1. Supabase Library:</b>');
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+  log('✅ window.supabase.createClient available');
+} else {
+  log('❌ window.supabase NOT available — supabase.min.js failed to load!', 'err');
+}
+
+// 2. Check ROADMAP
+log('<hr><b>2. Roadmap Data:</b>');
+if (window.ROADMAP) {
+  log('✅ window.ROADMAP defined, weeks: ' + window.ROADMAP.length);
+} else {
+  log('⏳ window.ROADMAP not yet defined... waiting 500ms', 'warn');
+  setTimeout(() => {
+    if (window.ROADMAP) {
+      log('✅ ROADMAP loaded after wait: ' + window.ROADMAP.length + ' weeks');
+    } else {
+      log('❌ window.ROADMAP STILL not defined — roadmap.js failed!', 'err');
+    }
+  }, 500);
+}
+
+// 3. Check recall
+log('<hr><b>3. Recall Engine:</b>');
+if (typeof window.getRecallItems === 'function') {
+  log('✅ getRecallItems function available');
+} else {
+  log('❌ getRecallItems NOT defined — recall.js failed!', 'err');
+}
+
+// 4. Check localStorage
+log('<hr><b>4. localStorage:</b>');
+try {
+  localStorage.setItem('_test', '1');
+  localStorage.removeItem('_test');
+  log('✅ localStorage works');
+} catch(e) {
+  log('❌ localStorage error: ' + e.message, 'err');
+}
+
+// 5. Check app functions
+log('<hr><b>5. App Functions:</b>');
+setTimeout(() => {
+  const fns = ['launchDashboard', 'renderSetupScreen', 'renderMainApp', 'boot'];
+  fns.forEach(fn => {
+    if (typeof window[fn] === 'function') {
+      log('✅ ' + fn + '()');
+    } else {
+      log('❌ ' + fn + '() NOT defined', 'err');
+    }
+  });
+
+  // 6. Try renderSetupScreen manually
+  log('<hr><b>6. App Container:</b>');
+  const app = document.getElementById('app');
+  if (app) {
+    log('✅ #app div exists, innerHTML length: ' + app.innerHTML.length);
+  } else {
+    log('❌ #app div NOT found!', 'err');
+  }
+
+  // 7. console errors
+  log('<hr><b>7. Global Errors Caught:</b>');
+  if (window._errors && window._errors.length > 0) {
+    window._errors.forEach(e => log('❌ ' + e, 'err'));
+  } else {
+    log('✅ No global errors caught');
+  }
+
+  log('<hr><b>All checks complete.</b>');
+}, 1000);
+</script>
+
+<script>
+// Catch global errors
+window._errors = [];
+window.addEventListener('error', e => {
+  window._errors.push(e.message + ' @ ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', e => {
+  window._errors.push('Promise rejection: ' + (e.reason?.message || e.reason));
+});
+</script>
+
+<!-- Load actual app scripts -->
+<div id="app" style="display:none"></div>
+<script src="supabase.min.js"></script>
+<script src="roadmap.js"></script>
+<script src="recall.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
