@@ -869,6 +869,7 @@ function showPage(pageId) {
 // ─── SETUP SCREEN ─────────────────────────────────────────────
 
 function renderSetupScreen() {
+  if (window.dismissLoader) window.dismissLoader();
   const app = document.getElementById('app');
   app.innerHTML = `
     <div id="page-setup" class="page active">
@@ -993,6 +994,7 @@ function launchDashboard() {
 // ─── MAIN APP ──────────────────────────────────────────────────
 
 function renderMainApp(state) {
+  if (window.dismissLoader) window.dismissLoader();
   document.getElementById('app').innerHTML = buildAppShell(state);
   renderDashboardPage(state);
 
@@ -2082,43 +2084,55 @@ window.saveSparkIdea = function() {
 
 // ─── BOOT SEQUENCE ────────────────────────────────────────────
 
+let bootRetries = 0;
 async function boot() {
-  // Wait for ROADMAP to load
-  if (!window.ROADMAP) {
-    setTimeout(boot, 100);
-    return;
-  }
-
-  const state = loadState();
-  const creds = loadCreds();
-
-  // Init Supabase if creds exist
-  if (creds.supabaseUrl && creds.supabaseKey) {
-    initSupabase(creds.supabaseUrl, creds.supabaseKey);
-  }
-
-  // Check if setup is needed
-  if (!state.startDate) {
-    renderSetupScreen();
-    return;
-  }
-
-  // Update current day based on date
-  state.currentDay = getDayFromStartDate(state.startDate);
-  window.currentDayLog = {};
-  window.appState = state;
-
-  // Try to sync from cloud on load
-  if (supabase) {
-    const cloudState = await supabaseLoadState();
-    if (cloudState && cloudState.totalHours >= (state.totalHours || 0)) {
-      window.appState = { ...defaultState(), ...cloudState };
-      saveState(window.appState);
+  try {
+    // Wait for ROADMAP to load (max 2 seconds)
+    if (!window.ROADMAP && bootRetries < 20) {
+      bootRetries++;
+      setTimeout(boot, 100);
+      return;
     }
-    updateSyncIndicator('online');
-  }
 
-  renderMainApp(window.appState);
+    const state = loadState();
+    const creds = loadCreds();
+
+    // Init Supabase if creds exist
+    if (creds.supabaseUrl && creds.supabaseKey) {
+      initSupabase(creds.supabaseUrl, creds.supabaseKey);
+    }
+
+    // Check if setup is needed
+    if (!state.startDate) {
+      renderSetupScreen();
+      return;
+    }
+
+    // Update current day based on date
+    state.currentDay = getDayFromStartDate(state.startDate);
+    window.currentDayLog = {};
+    window.appState = state;
+
+    // Try to sync from cloud on load
+    if (supabase) {
+      try {
+        const cloudState = await supabaseLoadState();
+        if (cloudState && cloudState.totalHours >= (state.totalHours || 0)) {
+          window.appState = { ...defaultState(), ...cloudState };
+          saveState(window.appState);
+        }
+        updateSyncIndicator('online');
+      } catch (e) {
+        console.warn('Cloud sync skipped:', e);
+      }
+    }
+
+    renderMainApp(window.appState);
+  } catch (err) {
+    console.error('Boot error:', err);
+    if (window.dismissLoader) window.dismissLoader();
+    renderSetupScreen();
+  }
 }
 
 // Start when DOM is ready
