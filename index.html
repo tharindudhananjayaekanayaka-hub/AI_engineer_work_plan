@@ -79,10 +79,12 @@
     // Failsafe: dismiss after at most 1.5s regardless of anything
     setTimeout(window.dismissLoader, 1500);
 
-    // Register Service Worker
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js').catch(function() {});
+    // Unregister any old service worker to eliminate cache conflicts
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
       });
     }
 

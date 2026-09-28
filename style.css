@@ -214,15 +214,17 @@ body::after {
 }
 
 /* ─── PAGES ──────────────────────────────────────────────────── */
-.page { display: none !important; padding: 28px 24px; }
-.page.active { display: block !important; }
+.page { display: none; padding: 28px 24px; }
+.page.active { display: block; }
 
 /* ─── SETUP SCREEN ───────────────────────────────────────────── */
 #page-setup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: calc(100vh - 64px);
   padding: 40px 24px;
 }
-
 .setup-wrapper {
   width: 100%;
   max-width: 680px;
