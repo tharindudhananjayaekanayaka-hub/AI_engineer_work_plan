@@ -11,15 +11,12 @@
 
   <title>AI Engineer Command Center</title>
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Supabase JS Client (Local bundle — zero CDN latency) -->
+  <!-- Supabase JS Client (Local bundle) -->
   <script src="supabase.min.js"></script>
 
   <!-- App Styles -->
@@ -30,70 +27,82 @@
 </head>
 <body>
 
-  <!-- Boot Loader Overlay (Auto-fades after 1.5s failsafe) -->
-  <div id="bootLoader" style="
-    position: fixed; inset: 0;
-    background: #050a0e;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 99999;
-    gap: 20px;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
-  ">
-    <div style="
-      width: 50px; height: 50px;
-      border: 3px solid rgba(0,255,150,0.2);
-      border-top-color: #00ff96;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    "></div>
-    <div style="font-family:'JetBrains Mono',monospace;color:#00ff96;font-size:12px;letter-spacing:0.12em">
-      INITIALIZING COMMAND CENTER...
+  <!-- App Mount Point (Pre-rendered Setup Screen for Instant 0ms Load) -->
+  <div id="app">
+    <div id="page-setup" class="page active" style="display: flex;">
+      <div class="setup-wrapper fade-in">
+        <div class="setup-header">
+          <div style="font-size:48px;margin-bottom:16px">🤖</div>
+          <h1>AI ENGINEER COMMAND CENTER</h1>
+          <p>90-Day Evidence-Based Training System — Let's configure your mission.</p>
+        </div>
+
+        <div class="glass-card" style="padding:28px">
+
+          <div class="setup-section">
+            <div class="setup-section-title">👤 Your Identity</div>
+            <div class="form-group">
+              <label class="form-label">Your Name / Callsign</label>
+              <input class="form-input" id="s-name" type="text" placeholder="Engineer WW" value="Engineer">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mission Start Date</label>
+              <input class="form-input" id="s-date" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Daily Target Hours</label>
+              <div class="hours-row">
+                <input class="hours-slider" id="s-hours" type="range" min="4" max="12" value="10">
+                <span class="hours-display" id="s-hours-display">10h</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-section-title">🐙 GitHub Integration (Auto-Commit Notes)</div>
+            <div class="form-group">
+              <label class="form-label">GitHub Repository</label>
+              <input class="form-input" id="s-repo" type="text" placeholder="username/repo-name" value="tharindudhananjayaekanayaka-hub/AI_engineer_work_plan">
+              <div class="form-hint">Your repo: tharindudhananjayaekanayaka-hub/AI_engineer_work_plan</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">GitHub Personal Access Token (PAT)</label>
+              <input class="form-input" id="s-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+              <div class="form-hint">
+                <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--neon-cyan)">Generate token here</a> → 
+                Tokens (classic) → Select "repo" scope
+              </div>
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-section-title">☁️ Supabase Cloud (Voice + Sync)</div>
+            <div class="form-group">
+              <label class="form-label">Supabase Project URL</label>
+              <input class="form-input" id="s-supa-url" type="text" value="https://liwogqucisllytbimywh.supabase.co">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Supabase Anon / Public Key</label>
+              <input class="form-input" id="s-supa-key" type="password" value="sb_publishable_nilZHxYBDAt3EmldAF3GNw_cpvBaXEt">
+            </div>
+            <div class="form-hint" style="margin-top:8px">
+              ✅ Your Supabase project is pre-configured.
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full btn-lg" id="s-launch" onclick="launchDashboard()">
+            🚀 Initialize Command Center
+          </button>
+        </div>
+      </div>
     </div>
+    <div id="toastContainer"></div>
   </div>
 
-  <!-- App Mount Point -->
-  <div id="app"></div>
-
-  <!-- ============================================================
-       SCRIPTS — Order: roadmap → recall → app
-       ============================================================ -->
+  <!-- Scripts -->
   <script src="roadmap.js"></script>
   <script src="recall.js"></script>
   <script src="app.js"></script>
-
-  <!-- Loader Dismissal & PWA Registration -->
-  <script>
-    // Universal Loader Dismissal Function
-    window.dismissLoader = function() {
-      var loader = document.getElementById('bootLoader');
-      if (loader) {
-        loader.style.opacity = '0';
-        loader.style.pointerEvents = 'none';
-        setTimeout(function() {
-          if (loader.parentNode) loader.parentNode.removeChild(loader);
-        }, 400);
-      }
-    };
-
-    // Failsafe: dismiss after at most 1.5s regardless of anything
-    setTimeout(window.dismissLoader, 1500);
-
-    // Unregister any old service worker to eliminate cache conflicts
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var i = 0; i < registrations.length; i++) {
-          registrations[i].unregister();
-        }
-      });
-    }
-
-    // Global error handler to catch any unexpected script error
-    window.addEventListener('error', function(e) {
-      window.dismissLoader();
-      console.error('Command Center Error:', e);
-    });
-  </script>
 
 </body>
 </html>
