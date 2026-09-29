@@ -217,9 +217,11 @@ body::after {
 .page { display: none; padding: 28px 24px; }
 .page.active { display: block; }
 
-/* ─── SETUP SCREEN ───────────────────────────────────────────── */
+/* ─── SETUP & LOGIN SCREENS ───────────────────────────────────── */
 #page-setup,
-#page-setup.active {
+#page-setup.active,
+#page-login,
+#page-login.active {
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -229,6 +231,18 @@ body::after {
 .setup-wrapper {
   width: 100%;
   max-width: 680px;
+}
+.login-wrapper {
+  width: 100%;
+  max-width: 450px;
+}
+.shake {
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
 }
 .setup-header {
   text-align: center;

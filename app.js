@@ -5,10 +5,31 @@
 
 'use strict';
 
-// ─── CONSTANTS ────────────────────────────────────────────────
+// ─── CONSTANTS & SECURITY ─────────────────────────────────────
 const APP_VERSION = '1.0.0';
 const STATE_KEY   = 'aie_cmd_state_v1';
 const CREDS_KEY   = 'aie_cmd_creds_v1';
+const AUTH_KEY    = 'aie_auth_session_v1';
+
+const ALLOWED_EMAIL     = 'tharindudhananjayaekanayaka@gmail.com';
+const ALLOWED_PASS_HASH = 'f514af2dc9eefca12301c562d2b787a2aff99bea83103e9559e63b44f49e7eeb';
+
+async function hashPassword(pass) {
+  try {
+    if (window.crypto && window.crypto.subtle) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(pass);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (_) {}
+  return pass === 'cpYT8654' ? ALLOWED_PASS_HASH : 'invalid';
+}
+
+function isAuthenticated() {
+  return localStorage.getItem(AUTH_KEY) === 'authenticated' ||
+         sessionStorage.getItem(AUTH_KEY) === 'authenticated';
+}
 
 const ENGINEER_TITLES = [
   { from: 1,  to: 7,  title: 'Novice Code Artisan',        icon: '🌱' },
@@ -104,12 +125,16 @@ function saveCreds(creds) {
 
 // ─── SUPABASE CLIENT ──────────────────────────────────────────
 
-let supabase = null;
+let sbClient = null;
 
 function initSupabase(url, key) {
   if (!url || !key) return false;
   try {
-    supabase = window.supabase.createClient(url, key);
+    if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+      console.warn('Supabase client library not loaded yet');
+      return false;
+    }
+    sbClient = window.supabase.createClient(url, key);
     return true;
   } catch (e) {
     console.error('Supabase init error:', e);
@@ -118,9 +143,9 @@ function initSupabase(url, key) {
 }
 
 async function supabaseUpsertDay(dayNum, dayData) {
-  if (!supabase) return false;
+  if (!sbClient) return false;
   try {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('daily_logs')
       .upsert({
         day_num: dayNum,
@@ -136,17 +161,17 @@ async function supabaseUpsertDay(dayNum, dayData) {
 }
 
 async function supabaseUploadAudio(dayNum, blob) {
-  if (!supabase || !blob) return null;
+  if (!sbClient || !blob) return null;
   try {
     const filename = `day-${String(dayNum).padStart(2,'0')}-voice.webm`;
-    const { error } = await supabase.storage
+    const { error } = await sbClient.storage
       .from('voice-notes')
       .upload(filename, blob, {
         contentType: 'audio/webm',
         upsert: true
       });
     if (error) throw error;
-    const { data } = supabase.storage.from('voice-notes').getPublicUrl(filename);
+    const { data } = sbClient.storage.from('voice-notes').getPublicUrl(filename);
     return data.publicUrl;
   } catch (e) {
     console.warn('Supabase audio upload error:', e);
@@ -155,9 +180,9 @@ async function supabaseUploadAudio(dayNum, blob) {
 }
 
 async function supabaseSyncState(state) {
-  if (!supabase) return false;
+  if (!sbClient) return false;
   try {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('app_state')
       .upsert({
         id: 1,
@@ -173,9 +198,9 @@ async function supabaseSyncState(state) {
 }
 
 async function supabaseLoadState() {
-  if (!supabase) return null;
+  if (!sbClient) return null;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
       .from('app_state')
       .select('state')
       .eq('id', 1)
@@ -523,8 +548,10 @@ function buildKnowledgeGraph(state) {
   const canvas = document.getElementById('graphCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  canvas.width  = canvas.offsetWidth;
-  canvas.height = canvas.offsetHeight || 500;
+  if (!ctx) return;
+  try {
+    canvas.width  = canvas.offsetWidth || 600;
+    canvas.height = canvas.offsetHeight || 500;
 
   // Build nodes from completed days
   graphNodes = [];
@@ -573,6 +600,9 @@ function buildKnowledgeGraph(state) {
   }
 
   drawGraph(ctx, canvas);
+  } catch (err) {
+    console.warn('buildKnowledgeGraph error:', err);
+  }
 }
 
 function drawGraph(ctx, canvas) {
@@ -618,18 +648,21 @@ function drawRadar(state) {
   const canvas = document.getElementById('radarCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const size = 220;
-  canvas.width = size;
-  canvas.height = size;
-  const cx = size / 2, cy = size / 2, r = 85;
-  const n = 5;
-  const angles = Array.from({ length: n }, (_, i) => (i / n) * Math.PI * 2 - Math.PI / 2);
+  if (!ctx) return;
+  try {
+    const size = 220;
+    canvas.width = size;
+    canvas.height = size;
+    const cx = size / 2, cy = size / 2, r = 85;
+    const n = 5;
+    const angles = Array.from({ length: n }, (_, i) => (i / n) * Math.PI * 2 - Math.PI / 2);
 
-  // Calculate max possible XP for normalization
-  const maxXP = 90 * 25; // rough max per skill
-  const values = SKILL_KEYS.map(k => Math.min(1, (state.skillXP[k] || 0) / maxXP));
+    // Calculate max possible XP for normalization
+    const maxXP = 90 * 25; // rough max per skill
+    const skillXP = state?.skillXP || {};
+    const values = SKILL_KEYS.map(k => Math.min(1, ((skillXP[k] || 0) / maxXP)));
 
-  ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, size, size);
 
   // Background grid
   [0.2, 0.4, 0.6, 0.8, 1].forEach(level => {
@@ -691,6 +724,9 @@ function drawRadar(state) {
     const y = cy + (r + 16) * Math.sin(a);
     ctx.fillText(shortLabels[i], x, y + 3);
   });
+  } catch(err) {
+    console.warn('drawRadar error:', err);
+  }
 }
 
 // ─── VOICE RECORDER ───────────────────────────────────────────
@@ -822,7 +858,8 @@ function updateLockChecklist() {
     if (item.id === 'hours')         done = (log.hours || 0) > 0;
 
     el.className = `lock-item ${done ? 'done' : ''}`;
-    el.querySelector('.lock-icon').textContent = done ? '✅' : '⬜';
+    const iconEl = el.querySelector('.lock-icon');
+    if (iconEl) iconEl.textContent = done ? '✅' : '⬜';
     if (!done) allDone = false;
   });
 
@@ -865,6 +902,151 @@ function showPage(pageId) {
   if (pageId === 'roadmap')  renderRoadmapPage();
   if (pageId === 'settings') renderSettingsPage();
 }
+
+// ─── LOGIN & SECURITY SCREEN ───────────────────────────────────
+
+function renderLoginScreen() {
+  if (window.dismissLoader) window.dismissLoader();
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  app.innerHTML = `
+    <div id="page-login" class="page active" style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:40px 24px;">
+      <div class="login-wrapper fade-in" id="loginCard">
+        <div class="setup-header" style="margin-bottom:28px">
+          <div style="font-size:44px;margin-bottom:12px">🔒</div>
+          <h1 style="font-size:24px;letter-spacing:1px">COMMAND ACCESS GATE</h1>
+          <p style="color:var(--neon-green);font-family:var(--font-mono);font-size:12px;margin-top:6px;letter-spacing:0.5px">
+            RESTRICTED SYSTEM • AUTHORIZED OPERATOR ONLY
+          </p>
+        </div>
+
+        <div class="glass-card" style="padding:28px">
+          <form onsubmit="handleLoginSubmit(event)" id="loginForm">
+            <div class="form-group" style="margin-bottom:20px">
+              <label class="form-label">Operator Clearance Email</label>
+              <input class="form-input" id="loginEmail" type="email" autocomplete="username" placeholder="tharindudhananjayaekanayaka@gmail.com" required style="font-family:var(--font-mono);font-size:13px">
+            </div>
+
+            <div class="form-group" style="margin-bottom:20px">
+              <label class="form-label">Security Passkey</label>
+              <div style="position:relative">
+                <input class="form-input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required style="font-family:var(--font-mono);padding-right:42px">
+                <button type="button" onclick="togglePassVisibility()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px" title="Show/Hide">
+                  👁️
+                </button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer">
+                <input type="checkbox" id="loginRemember" checked style="accent-color:var(--neon-green)">
+                <span>Remember this terminal</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginSubmitBtn">
+              ⚡ Authenticate &amp; Access
+            </button>
+
+            <div id="loginFeedback" style="margin-top:16px;text-align:center;font-size:12px;font-family:var(--font-mono);display:none"></div>
+          </form>
+        </div>
+
+        <p style="text-align:center;color:var(--text-muted);font-size:11px;margin-top:20px;font-family:var(--font-mono)">
+          Protected by SHA-256 Authentication Protocol • 90-Day Mission Log
+        </p>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    const emailInput = document.getElementById('loginEmail');
+    const passInput  = document.getElementById('loginPassword');
+    if (emailInput && !emailInput.value) {
+      emailInput.focus?.();
+    } else if (passInput) {
+      passInput.focus?.();
+    }
+  }, 100);
+}
+
+window.togglePassVisibility = function() {
+  const p = document.getElementById('loginPassword');
+  if (p) p.type = p.type === 'password' ? 'text' : 'password';
+};
+
+window.handleLoginSubmit = async function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const emailInput = document.getElementById('loginEmail');
+  const passInput  = document.getElementById('loginPassword');
+  const remember   = document.getElementById('loginRemember')?.checked;
+  const feedback   = document.getElementById('loginFeedback');
+  const card       = document.getElementById('loginCard');
+  const btn        = document.getElementById('loginSubmitBtn');
+
+  const email = emailInput?.value?.trim().toLowerCase();
+  const pass  = passInput?.value || '';
+
+  if (!email || !pass) {
+    showToast('⚠️ Please enter both email and password', 'warning');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '🔒 Verifying Clearance...';
+  }
+
+  const hash = await hashPassword(pass);
+  const isMatch = (email === ALLOWED_EMAIL.toLowerCase()) && (hash === ALLOWED_PASS_HASH || pass === 'cpYT8654');
+
+  if (isMatch) {
+    if (feedback) {
+      feedback.style.display = 'block';
+      feedback.style.color = 'var(--neon-green)';
+      feedback.textContent = '✅ CLEARANCE VERIFIED • Welcome, Engineer Tharindu.';
+    }
+    if (remember) {
+      localStorage.setItem(AUTH_KEY, 'authenticated');
+    } else {
+      sessionStorage.setItem(AUTH_KEY, 'authenticated');
+    }
+
+    showToast('✅ Access Granted. Welcome, Engineer Tharindu!', 'success');
+
+    setTimeout(() => {
+      boot();
+    }, 400);
+  } else {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '⚡ Authenticate & Access';
+    }
+    if (card) {
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+    }
+    if (feedback) {
+      feedback.style.display = 'block';
+      feedback.style.color = '#ef4444';
+      feedback.textContent = '⛔ ACCESS DENIED • Invalid operator credentials.';
+    }
+    showToast('⛔ Access Denied: Unauthorized credentials.', 'error');
+    if (passInput) {
+      passInput.value = '';
+      passInput.focus?.();
+    }
+  }
+};
+
+window.logoutUser = function() {
+  localStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_KEY);
+  showToast('🔒 Terminal Locked', 'info');
+  renderLoginScreen();
+};
 
 // ─── SETUP SCREEN ─────────────────────────────────────────────
 
@@ -955,17 +1137,17 @@ function renderSetupScreen() {
 }
 
 function launchDashboard() {
-  const name      = document.getElementById('s-name')?.value || 'Engineer';
-  const startDate = document.getElementById('s-date')?.value;
-  const targetH   = parseInt(document.getElementById('s-hours')?.value || 10);
-  const repo      = document.getElementById('s-repo')?.value?.trim();
-  const token     = document.getElementById('s-token')?.value?.trim();
-  const supaUrl   = document.getElementById('s-supa-url')?.value?.trim();
-  const supaKey   = document.getElementById('s-supa-key')?.value?.trim();
+  const name      = document.getElementById('s-name')?.value?.trim() || 'Engineer';
+  const dateInput = document.getElementById('s-date');
+  const startDate = dateInput?.value || new Date().toISOString().split('T')[0];
+  const targetH   = parseInt(document.getElementById('s-hours')?.value || 10, 10);
+  const repo      = document.getElementById('s-repo')?.value?.trim() || 'tharindudhananjayaekanayaka-hub/AI_engineer_work_plan';
+  const token     = document.getElementById('s-token')?.value?.trim() || '';
+  const supaUrl   = document.getElementById('s-supa-url')?.value?.trim() || '';
+  const supaKey   = document.getElementById('s-supa-key')?.value?.trim() || '';
 
-  if (!startDate) {
-    showToast('📅 Please select a start date', 'error');
-    return;
+  if (dateInput && !dateInput.value) {
+    dateInput.value = startDate;
   }
 
   // Save creds
@@ -992,22 +1174,46 @@ function launchDashboard() {
 // ─── MAIN APP ──────────────────────────────────────────────────
 
 function renderMainApp(state) {
-  if (window.dismissLoader) window.dismissLoader();
-  document.getElementById('app').innerHTML = buildAppShell(state);
-  renderDashboardPage(state);
+  try {
+    if (window.dismissLoader) window.dismissLoader();
+    const appEl = document.getElementById('app');
+    if (!appEl) throw new Error('No #app element found in DOM');
 
-  // Nav
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => showPage(btn.dataset.page));
-  });
+    appEl.innerHTML = buildAppShell(state);
+    renderDashboardPage(state);
 
-  // Spark idea shortcut
-  document.addEventListener('keydown', e => {
-    if ((e.altKey || e.metaKey) && e.key === 'i') {
-      e.preventDefault();
-      openSparkModal();
+    // Nav listeners
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => showPage(btn.dataset.page));
+    });
+
+    document.addEventListener('keydown', e => {
+      if ((e.altKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        openSparkModal();
+      }
+    });
+
+  } catch (err) {
+    console.error('renderMainApp CRASH:', err);
+    const appEl = document.getElementById('app');
+    if (appEl) {
+      appEl.style.cssText = 'background:#0a0a0a;color:#ff4444;padding:40px;font-family:monospace;min-height:100vh;';
+      appEl.innerHTML = `
+        <h2 style="color:#ff4444;margin-bottom:16px">⚠️ Dashboard Render Error</h2>
+        <p style="color:#fff;margin-bottom:8px"><strong>${err.message}</strong></p>
+        <pre style="background:#1a1a2e;padding:16px;border-radius:8px;overflow:auto;font-size:11px;color:#aaa;margin-bottom:24px;white-space:pre-wrap">${err.stack || 'No stack available'}</pre>
+        <button onclick="localStorage.clear();location.reload();"
+          style="background:#ef4444;color:#fff;border:none;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:14px">
+          🔄 Full Reset &amp; Reload
+        </button>
+        <button onclick="localStorage.removeItem('aie_cmd_state_v1');location.reload();"
+          style="background:#7c3aed;color:#fff;border:none;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:14px;margin-left:12px">
+          🔧 Reset State Only
+        </button>
+      `;
     }
-  });
+  }
 }
 
 function buildAppShell(state) {
@@ -1041,6 +1247,7 @@ function buildAppShell(state) {
           <span id="streakCount">${state.streak || 0}</span>
           <span style="font-size:11px;opacity:0.7">streak</span>
         </div>
+        <button class="btn btn-secondary btn-sm" onclick="logoutUser()" title="Lock Terminal" style="padding:6px 12px;font-size:12px;margin-left:6px">🔒 Lock</button>
       </div>
     </div>
 
@@ -1665,19 +1872,26 @@ function renderQuickRecall(state) {
   const panel = document.getElementById('quickRecallContent');
   if (!panel) return;
 
+  if (typeof window.getRecallItems !== 'function') {
+    panel.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Spaced recall engine initializing...</p>`;
+    return;
+  }
+
   const items = window.getRecallItems(
     state.currentDay,
     state.completedDays || {},
     state.weakTopics || []
   );
 
-  if (items.length === 0) {
+  if (!items || items.length === 0) {
     panel.innerHTML = `<p style="color:var(--text-muted);font-size:13px">No recall items yet — complete your first day to start the spaced repetition engine.</p>`;
     return;
   }
 
   const item = items[0]; // Show one item at a time
-  const prompt = window.buildRecallPrompt(item);
+  const prompt = typeof window.buildRecallPrompt === 'function'
+    ? window.buildRecallPrompt(item)
+    : (item.question || '');
 
   panel.innerHTML = `
     <div class="recall-topic-tag">Day ${item.dayNum} • ${item.type}</div>
@@ -1709,8 +1923,9 @@ function renderSkillBars(state) {
   if (!container) return;
 
   const maxXP = 500;
+  const skillXP = state?.skillXP || {};
   container.innerHTML = SKILL_KEYS.map((key, i) => {
-    const xp  = state.skillXP[key] || 0;
+    const xp  = skillXP[key] || 0;
     const pct = Math.min(100, Math.round((xp / maxXP) * 100));
     const lvl = Math.floor(xp / 50) + 1;
     return `
@@ -1732,7 +1947,12 @@ function renderSkillBars(state) {
 function renderRecallPage() {
   const container = document.getElementById('recallContent');
   if (!container) return;
-  const state = window.appState;
+  const state = window.appState || defaultState();
+
+  if (typeof window.getRecallItems !== 'function') {
+    container.innerHTML = `<div class="glass-card" style="padding:32px;text-align:center"><p style="color:var(--text-muted)">Recall engine initializing...</p></div>`;
+    return;
+  }
 
   const items = window.getRecallItems(
     state.currentDay,
@@ -1740,7 +1960,7 @@ function renderRecallPage() {
     state.weakTopics || []
   );
 
-  if (items.length === 0) {
+  if (!items || items.length === 0) {
     container.innerHTML = `
       <div class="glass-card" style="padding:48px;text-align:center">
         <div style="font-size:48px;margin-bottom:16px">🧠</div>
@@ -1817,7 +2037,7 @@ window.submitRecall = function(idx, confidence, total) {
 function renderRoadmapPage() {
   const container = document.getElementById('roadmapContent');
   if (!container || !window.ROADMAP) return;
-  const state = window.appState;
+  const state = window.appState || defaultState();
 
   container.innerHTML = `
     <div style="margin-bottom:24px">
@@ -1888,7 +2108,7 @@ function renderSettingsPage() {
   const container = document.getElementById('settingsContent');
   if (!container) return;
   const creds = loadCreds();
-  const state = window.appState;
+  const state = window.appState || defaultState();
 
   container.innerHTML = `
     <h2 style="font-family:var(--font-mono);color:var(--neon-green);font-size:18px;margin-bottom:24px">⚙️ Command Center Settings</h2>
@@ -1904,6 +2124,14 @@ function renderSettingsPage() {
         <input class="form-input" id="cfg-token" type="password" value="${creds.githubToken || ''}" placeholder="ghp_xxxx">
       </div>
       <button class="btn btn-secondary btn-sm" onclick="testGitHub()">🔗 Test GitHub Connection</button>
+    </div>
+
+    <div class="glass-card settings-section">
+      <div class="settings-section-title">🔒 Security &amp; Access Control</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">
+        Authorized Operator: <strong style="color:var(--neon-green)">tharindudhananjayaekanayaka@gmail.com</strong>
+      </p>
+      <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🔒 Lock Terminal / Logout</button>
     </div>
 
     <div class="glass-card settings-section">
@@ -2082,8 +2310,8 @@ window.saveSparkIdea = function() {
 let bootRetries = 0;
 async function boot() {
   try {
-    // Wait for ROADMAP to load (max 2 seconds)
-    if (!window.ROADMAP && bootRetries < 20) {
+    // Wait for ROADMAP to load (max 2.5 seconds)
+    if (!window.ROADMAP && bootRetries < 25) {
       bootRetries++;
       setTimeout(boot, 100);
       return;
@@ -2091,6 +2319,12 @@ async function boot() {
 
     const state = loadState();
     const creds = loadCreds();
+
+    // Security Gate: Operator Authentication Check
+    if (!isAuthenticated()) {
+      renderLoginScreen();
+      return;
+    }
 
     // Init Supabase if creds exist
     if (creds.supabaseUrl && creds.supabaseKey) {
@@ -2108,21 +2342,22 @@ async function boot() {
     window.currentDayLog = {};
     window.appState = state;
 
-    // Try to sync from cloud on load
-    if (supabase) {
-      try {
-        const cloudState = await supabaseLoadState();
+    // Render immediately so user sees their dashboard with ZERO delay
+    renderMainApp(window.appState);
+
+    // Sync from cloud in background (never blocks UI)
+    if (sbClient) {
+      supabaseLoadState().then(cloudState => {
         if (cloudState && cloudState.totalHours >= (state.totalHours || 0)) {
           window.appState = { ...defaultState(), ...cloudState };
           saveState(window.appState);
+          renderMainApp(window.appState);
         }
         updateSyncIndicator('online');
-      } catch (e) {
+      }).catch(e => {
         console.warn('Cloud sync skipped:', e);
-      }
+      });
     }
-
-    renderMainApp(window.appState);
   } catch (err) {
     console.error('Boot error:', err);
     if (window.dismissLoader) window.dismissLoader();
