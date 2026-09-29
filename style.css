@@ -218,11 +218,12 @@ body::after {
 .page.active { display: block; }
 
 /* ─── SETUP SCREEN ───────────────────────────────────────────── */
-#page-setup {
-  display: flex;
+#page-setup,
+#page-setup.active {
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   padding: 40px 24px;
 }
 .setup-wrapper {

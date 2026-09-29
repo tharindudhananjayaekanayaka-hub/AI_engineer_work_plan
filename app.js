@@ -872,7 +872,7 @@ function renderSetupScreen() {
   if (window.dismissLoader) window.dismissLoader();
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div id="page-setup" class="page active">
+    <div id="page-setup" class="page active" style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:40px 24px;">
       <div class="setup-wrapper fade-in">
         <div class="setup-header">
           <div style="font-size:48px;margin-bottom:16px">🤖</div>
@@ -937,9 +937,7 @@ function renderSetupScreen() {
             🚀 Initialize Command Center
           </button>
         </div>
-      </div>
     </div>
-    <div id="toastContainer"></div>
   `;
 
   // Set today as default date
@@ -1087,9 +1085,6 @@ function buildAppShell(state) {
         </div>
       </div>
     </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer"></div>
   `;
 }
 
