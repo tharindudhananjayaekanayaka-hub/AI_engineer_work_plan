@@ -43,7 +43,12 @@ const ICONS = {
   clock: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
   calendar: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
   spark: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-  arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`
+  arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+  play: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  pause: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
+  reset: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>`,
+  maximize: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`,
+  minimize: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`
 };
 
 const ENGINEER_TITLES = [
@@ -509,6 +514,201 @@ function updateSyncIndicator(status) {
   if (status === 'offline') { dot.classList.add('offline'); text.textContent = 'Offline'; }
   if (status === 'syncing') { dot.classList.add('syncing'); text.textContent = 'Syncing...'; }
 }
+
+// ─── LIVE CLOCK & ZEN FOCUS TIMER ─────────────────────────────
+
+let focusDurationSeconds  = 2 * 60 * 60; // default 2 hours (7200s)
+let focusRemainingSeconds = 2 * 60 * 60;
+let focusTimerInterval    = null;
+let isFocusRunning        = false;
+let focusTargetLabel      = '2 Hours (Deep Work)';
+
+function getFormattedLocalTime() {
+  const d = new Date();
+  return d.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatCountdown(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// Continuous local clock update (every 1s)
+setInterval(() => {
+  const timeStr = getFormattedLocalTime();
+  const el = document.getElementById('liveLocalClock');
+  if (el) el.textContent = timeStr;
+  const zenEl = document.getElementById('zenLocalClock');
+  if (zenEl) zenEl.textContent = `LOCAL TIME • ${timeStr}`;
+}, 1000);
+
+function playZenChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const freqs = [528, 660, 792, 1056]; // Solfeggio / Tibetan singing bell frequencies
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.28);
+      gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.28);
+      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + idx * 0.28 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.28 + 3.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.28);
+      osc.stop(ctx.currentTime + idx * 0.28 + 3.2);
+    });
+  } catch (e) {
+    console.warn('Audio chime error:', e);
+  }
+}
+
+window.setFocusPreset = function(seconds, label) {
+  focusDurationSeconds  = seconds;
+  focusRemainingSeconds = seconds;
+  focusTargetLabel      = label;
+  if (isFocusRunning) {
+    clearInterval(focusTimerInterval);
+    isFocusRunning = false;
+  }
+  updateFocusDisplay();
+
+  document.querySelectorAll('.timer-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.seconds == seconds);
+  });
+};
+
+function updateFocusDisplay() {
+  const formatted = formatCountdown(focusRemainingSeconds);
+  const cardDigits = document.getElementById('countdownDigits');
+  const zenDigits  = document.getElementById('zenTimerDisplay');
+  const targetLabelEl = document.getElementById('countdownTargetLabel');
+  const zenTargetEl   = document.getElementById('zenTargetBadge');
+  const playBtnText   = document.getElementById('focusPlayBtn');
+  const zenPlayBtn    = document.getElementById('zenPlayBtn');
+
+  if (cardDigits) {
+    cardDigits.textContent = formatted;
+    cardDigits.classList.toggle('running', isFocusRunning);
+  }
+  if (zenDigits) {
+    zenDigits.textContent = formatted;
+  }
+  if (targetLabelEl) targetLabelEl.textContent = `TARGET: ${focusTargetLabel}`;
+  if (zenTargetEl) zenTargetEl.textContent = `TARGET: ${focusTargetLabel}`;
+
+  const btnHtml = isFocusRunning
+    ? `${ICONS.pause} <span>Pause</span>`
+    : `${ICONS.play} <span>Start Focus</span>`;
+  if (playBtnText) playBtnText.innerHTML = btnHtml;
+  if (zenPlayBtn) zenPlayBtn.innerHTML = btnHtml;
+}
+
+window.toggleFocusTimer = function() {
+  if (isFocusRunning) {
+    // Pause
+    clearInterval(focusTimerInterval);
+    isFocusRunning = false;
+    updateFocusDisplay();
+    showToast('⏸️ Focus timer paused', 'info');
+  } else {
+    // Start
+    if (focusRemainingSeconds <= 0) {
+      focusRemainingSeconds = focusDurationSeconds;
+    }
+    isFocusRunning = true;
+    updateFocusDisplay();
+    showToast(`⚡ Focus started — ${focusTargetLabel}`, 'success');
+
+    focusTimerInterval = setInterval(() => {
+      focusRemainingSeconds--;
+      updateFocusDisplay();
+
+      if (focusRemainingSeconds <= 0) {
+        clearInterval(focusTimerInterval);
+        isFocusRunning = false;
+        updateFocusDisplay();
+        onFocusTimerComplete();
+      }
+    }, 1000);
+  }
+};
+
+window.resetFocusTimer = function() {
+  clearInterval(focusTimerInterval);
+  isFocusRunning = false;
+  focusRemainingSeconds = focusDurationSeconds;
+  updateFocusDisplay();
+  showToast('🔄 Timer reset', 'info');
+};
+
+function onFocusTimerComplete() {
+  playZenChime();
+  if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 400]);
+
+  const hoursGained = +(focusDurationSeconds / 3600).toFixed(1);
+  window.currentDayLog = window.currentDayLog || {};
+  const currentHours = window.currentDayLog.hours || 0;
+  window.currentDayLog.hours = Math.min(12, +(currentHours + hoursGained).toFixed(1));
+
+  // Update slider if present in DOM
+  const slider = document.getElementById('hoursSlider');
+  const display = document.getElementById('hoursDisplay');
+  if (slider) slider.value = window.currentDayLog.hours;
+  if (display) display.textContent = `${window.currentDayLog.hours}h`;
+  updateLockChecklist();
+  triggerAutoSave();
+
+  launchParticles();
+  showToast(`🎉 Focus Session Finished! +${hoursGained}h logged to your day.`, 'success', 8000);
+}
+
+window.openZenMode = function() {
+  const overlay = document.getElementById('zenFocusOverlay');
+  if (!overlay) return;
+  overlay.classList.add('active');
+
+  // Try standard fullscreen
+  try {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  } catch (_) {}
+
+  updateFocusDisplay();
+};
+
+window.closeZenMode = function() {
+  const overlay = document.getElementById('zenFocusOverlay');
+  if (overlay) overlay.classList.remove('active');
+
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  } catch (_) {}
+};
+
+window.openScheduleModal = function() {
+  document.getElementById('scheduleModal')?.classList.add('show');
+};
+
+window.closeScheduleModal = function() {
+  document.getElementById('scheduleModal')?.classList.remove('show');
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeZenMode();
+    closeScheduleModal();
+    if (typeof closeSparkModal === 'function') closeSparkModal();
+  }
+});
 
 // ─── PARTICLE EFFECT ──────────────────────────────────────────
 
@@ -1334,6 +1534,122 @@ function buildAppShell(state) {
         </div>
       </div>
     </div>
+
+    <!-- Zen Fullscreen Focus Mode -->
+    <div id="zenFocusOverlay">
+      <div class="zen-ambient-glow"></div>
+      <div class="zen-topbar">
+        <div class="zen-badge">
+          <span class="live-pulse-dot"></span>
+          <span>ZEN FOCUS MODE</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeZenMode()" style="gap:6px">
+          ${ICONS.minimize} <span>Exit Fullscreen (Esc)</span>
+        </button>
+      </div>
+
+      <div class="zen-center">
+        <div class="zen-target-badge" id="zenTargetBadge">TARGET: 2 HOURS (DEEP WORK)</div>
+        <div class="zen-timer-display" id="zenTimerDisplay">02:00:00</div>
+        <div class="zen-local-clock" id="zenLocalClock">LOCAL TIME • 00:00:00</div>
+        <div class="zen-quote">"While 99% of people sleep-scroll, you are compounding skills that define the next decade."</div>
+      </div>
+
+      <div class="zen-footer-controls">
+        <button class="btn btn-primary btn-lg" onclick="toggleFocusTimer()" id="zenPlayBtn" style="gap:8px;padding:12px 28px;font-size:15px">
+          ${ICONS.play} <span>Start Focus</span>
+        </button>
+        <button class="btn btn-secondary btn-lg" onclick="resetFocusTimer()" style="gap:8px;padding:12px 20px;font-size:15px">
+          ${ICONS.reset} <span>Reset</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 10-Hour Master Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModal">
+      <div class="modal-box" style="max-width:680px;max-height:90vh;overflow-y:auto">
+        <div class="flex justify-between items-center" style="margin-bottom:12px">
+          <div class="modal-title" style="margin:0">📅 10-Hour Master Daily Schedule</div>
+          <button class="btn btn-secondary btn-sm" onclick="closeScheduleModal()" style="padding:4px 10px">✕</button>
+        </div>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+          Scientifically balanced time-blocking to conquer 10 deep hours without burnout.
+        </p>
+
+        <div style="overflow-x:auto">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Time Window</th>
+                <th>Session</th>
+                <th>Focus &amp; Activities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="schedule-time">05:30 – 06:00</td>
+                <td><span class="schedule-block-tag" style="background:rgba(255,255,255,0.06);color:var(--text-secondary)">30m Kickstart</span></td>
+                <td>Sunlight, hydration, light stretch, daily mission preview</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">06:00 – 08:00</td>
+                <td><span class="schedule-block-tag" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald)">Block 1 • 2h</span></td>
+                <td><strong>Deep Study:</strong> First-principles theory, architecture, whitepapers</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">08:00 – 09:00</td>
+                <td><span class="schedule-block-tag" style="background:rgba(245,158,11,0.15);color:var(--accent-amber)">60m Rest</span></td>
+                <td>Breakfast &amp; true mental detachment from screens</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">09:00 – 13:00</td>
+                <td><span class="schedule-block-tag" style="background:rgba(6,182,212,0.15);color:var(--accent-cyan)">Block 2 • 4h</span></td>
+                <td><strong>Deep Build:</strong> Hands-on production code &amp; capstone milestone</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">13:00 – 14:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(245,158,11,0.15);color:var(--accent-amber)">90m Recharge</span></td>
+                <td>Lunch + 20-30 min power nap to restore cognitive power</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">14:30 – 16:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(168,85,247,0.15);color:var(--accent-purple)">Block 3 • 2h</span></td>
+                <td><strong>Practice:</strong> LeetCode / DSA / Hands-on debugging (No tutorials)</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">16:30 – 17:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(255,255,255,0.06);color:var(--text-secondary)">60m Refresh</span></td>
+                <td>Workout, outdoor walk, evening tea, fresh air</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">17:30 – 19:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald)">Block 4 • 2h</span></td>
+                <td><strong>English Mastery:</strong> Feynman speech out loud + AI voice interview</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">19:30 – 20:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(245,158,11,0.15);color:var(--accent-amber)">60m Dinner</span></td>
+                <td>Dinner &amp; relaxing with family</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">20:30 – 21:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(6,182,212,0.15);color:var(--accent-cyan)">Block 5 • 1h</span></td>
+                <td><strong>Reflection &amp; Lock:</strong> Notes review, GitHub auto-commit, terminal lock</td>
+              </tr>
+              <tr>
+                <td class="schedule-time">22:00 – 05:30</td>
+                <td><span class="schedule-block-tag" style="background:rgba(255,255,255,0.06);color:var(--text-muted)">7.5h Sleep</span></td>
+                <td>Deep restorative sleep for neural memory consolidation</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:20px;text-align:right">
+          <button class="btn btn-primary btn-sm" onclick="closeScheduleModal()">Got It</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -1372,6 +1688,46 @@ function renderDashboardPage(state) {
         <div class="meta-chip amber">${ICONS.clock} Target: ${state.targetHours || 10}h</div>
         <div class="meta-chip cyan">${ICONS.spark} ${progress}% Complete</div>
         <div class="meta-chip">${ICONS.check} ${completedCount} Days Done</div>
+      </div>
+    </div>
+
+    <!-- Focus Timer & Live Clock Widget -->
+    <div class="focus-timer-card fade-in">
+      <div class="focus-timer-header">
+        <div class="local-clock-badge">
+          <span class="live-pulse-dot"></span>
+          <span>LIVE CLOCK:</span>
+          <span id="liveLocalClock">${getFormattedLocalTime()}</span>
+        </div>
+
+        <div class="timer-presets">
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-right:4px">PRESET:</span>
+          <button class="timer-preset-btn ${focusDurationSeconds === 7200 ? 'active' : ''}" data-seconds="7200" onclick="setFocusPreset(7200, '2 Hours (Deep Work)')">2 Hours</button>
+          <button class="timer-preset-btn ${focusDurationSeconds === 3600 ? 'active' : ''}" data-seconds="3600" onclick="setFocusPreset(3600, '1 Hour (Focus)')">1 Hour</button>
+          <button class="timer-preset-btn ${focusDurationSeconds === 1500 ? 'active' : ''}" data-seconds="1500" onclick="setFocusPreset(1500, '25 Min (Pomodoro)')">25 Min</button>
+        </div>
+      </div>
+
+      <div class="focus-timer-body">
+        <div class="countdown-wrapper">
+          <div class="countdown-digits ${isFocusRunning ? 'running' : ''}" id="countdownDigits">${formatCountdown(focusRemainingSeconds)}</div>
+          <div class="countdown-target-label" id="countdownTargetLabel">TARGET: ${focusTargetLabel}</div>
+        </div>
+
+        <div class="timer-controls-row">
+          <button class="btn btn-primary" id="focusPlayBtn" onclick="toggleFocusTimer()" style="gap:8px">
+            ${isFocusRunning ? `${ICONS.pause} <span>Pause</span>` : `${ICONS.play} <span>Start Focus</span>`}
+          </button>
+          <button class="btn btn-secondary" onclick="resetFocusTimer()" title="Reset Session" style="gap:6px">
+            ${ICONS.reset} <span>Reset</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openZenMode()" title="Zen Fullscreen Mode" style="gap:6px;border-color:rgba(16,185,129,0.3)">
+            ${ICONS.maximize} <span>Zen Fullscreen</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openScheduleModal()" title="10-Hour Master Schedule" style="gap:6px">
+            ${ICONS.clock} <span>10h Schedule</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1420,6 +1776,9 @@ function renderDashboardPage(state) {
 
     ${isDayDone ? renderDayComplete(currentDay, state) : renderDayBlocks(currentDay, roadmapDay, state)}
   `;
+
+  // Update focus timer display if running
+  updateFocusDisplay();
 
   // Skill bars
   renderSkillBars(state);
@@ -1543,32 +1902,55 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
           </div>
         </div>
 
-        <!-- Block 4: Voice Explanation -->
+        <!-- Block 4: English Mastery & Voice Explanation -->
         <div class="block-card" id="block-4">
           <div class="block-header" onclick="toggleBlock('block-4')">
             <div class="block-number block-num-4">B4</div>
             <div class="block-info">
-              <div class="block-name">Voice Explanation</div>
-              <div class="block-duration">1h • Feynman Technique</div>
+              <div class="block-name">English Mastery &amp; Feynman Voice</div>
+              <div class="block-duration">2h • Technical Speech &amp; Spoken Interview Fluency</div>
             </div>
             <span class="block-status-icon" id="b4-icon">🔒</span>
           </div>
           <div class="block-content">
-            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6">
-              Close all notes. Explain today's concepts <strong style="color:var(--text-primary)">out loud</strong> as if teaching a junior dev. Record, listen back, and catch your gaps.
-            </p>
-            <div class="voice-recorder">
-              <div class="recorder-controls">
-                <button class="record-btn" id="recordBtn">
-                  <span class="record-dot"></span> Start Recording
-                </button>
-                <span class="voice-timer" id="voiceTimer">00:00</span>
+            <div class="english-track-grid">
+              <!-- Track 1: Technical Feynman Explanation -->
+              <div class="english-track-card">
+                <div class="track-tag">PART 1 • 60 MIN</div>
+                <div class="track-title">🎙️ Technical Explanation in English</div>
+                <p class="track-desc">
+                  Close all notes. Explain today's concepts <strong style="color:var(--text-primary)">out loud in English</strong> as if presenting to an international engineering team. Record and listen back.
+                </p>
+                <div class="voice-recorder">
+                  <div class="recorder-controls">
+                    <button class="record-btn" id="recordBtn">
+                      <span class="record-dot"></span> Start Recording
+                    </button>
+                    <span class="voice-timer" id="voiceTimer">00:00</span>
+                  </div>
+                  <div class="voice-status" id="voiceStatus">Speak clearly in English and explain the architecture</div>
+                  <audio class="voice-playback" id="voicePlayback" controls style="display:none"></audio>
+                  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                    <button class="btn btn-secondary btn-sm" id="voiceDownload" style="display:none">⬇️ Download</button>
+                    <button class="btn btn-secondary btn-sm" id="voiceUpload" style="display:none">☁️ Upload to Cloud</button>
+                  </div>
+                </div>
               </div>
-              <div class="voice-status" id="voiceStatus">Click to start recording your voice explanation</div>
-              <audio class="voice-playback" id="voicePlayback" controls style="display:none"></audio>
-              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-                <button class="btn btn-secondary btn-sm" id="voiceDownload" style="display:none">⬇️ Download</button>
-                <button class="btn btn-secondary btn-sm" id="voiceUpload" style="display:none">☁️ Upload to Cloud</button>
+
+              <!-- Track 2: Spoken Interview Simulation -->
+              <div class="english-track-card">
+                <div class="track-tag">PART 2 • 60 MIN</div>
+                <div class="track-title">🗣️ AI Engineering Spoken Interview</div>
+                <p class="track-desc">
+                  Simulate a live international tech interview. Put your phone/desktop on ChatGPT or Claude Voice Mode and articulate your answers out loud.
+                </p>
+                <div class="interview-prompt-box">
+                  <div style="font-size:11px;font-weight:600;color:var(--text-primary);margin-bottom:4px">Recommended Voice Mode Prompt:</div>
+                  <code>"Act as a Principal AI Engineer interviewing me for a Senior AI Role. Ask me tough technical questions on today's topic and critique my spoken fluency and structure."</code>
+                </div>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">
+                  💡 Focus: Eliminate filler words, pronounce technical terms clearly, and speak with steady confidence.
+                </div>
               </div>
             </div>
           </div>
