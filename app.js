@@ -31,6 +31,21 @@ function isAuthenticated() {
          sessionStorage.getItem(AUTH_KEY) === 'authenticated';
 }
 
+const ICONS = {
+  dashboard: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>`,
+  roadmap: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>`,
+  recall: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>`,
+  graph: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="9" y1="18" x2="15" y2="18"/></svg>`,
+  settings: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  lock: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  flame: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.8 2.2-2.5 4.3-4.2 6.1C6.1 9.9 5 12.3 5 15c0 3.9 3.1 7 7 7s7-3.1 7-7c0-2.8-1.5-5.3-3.2-7.2-.6 2.3-2.3 3.7-3.8 3.7-.4 0-.8-.1-1.1-.3 1.1-1.8 1.8-3.9 1.1-6.2z"/></svg>`,
+  check: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  clock: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  calendar: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  spark: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`
+};
+
 const ENGINEER_TITLES = [
   { from: 1,  to: 7,  title: 'Novice Code Artisan',        icon: '🌱' },
   { from: 8,  to: 21, title: 'Backend Systems Builder',     icon: '⚙️' },
@@ -695,11 +710,11 @@ function drawRadar(state) {
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(0,255,150,0.15)';
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
   ctx.fill();
-  ctx.strokeStyle = '#00ff96';
+  ctx.strokeStyle = '#10B981';
   ctx.lineWidth = 2;
-  ctx.shadowColor = '#00ff96';
+  ctx.shadowColor = '#10B981';
   ctx.shadowBlur = 10;
   ctx.stroke();
   ctx.shadowBlur = 0;
@@ -710,7 +725,7 @@ function drawRadar(state) {
     const y = cy + r * values[i] * Math.sin(a);
     ctx.beginPath();
     ctx.arc(x, y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#00ff96';
+    ctx.fillStyle = '#10B981';
     ctx.fill();
   });
 
@@ -888,13 +903,14 @@ function triggerAutoSave() {
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === pageId);
+  });
 
   const page = document.getElementById(`page-${pageId}`);
   if (page) page.classList.add('active');
 
-  const btn = document.querySelector(`[data-page="${pageId}"]`);
-  if (btn) btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Page-specific init
   if (pageId === 'graph')    buildKnowledgeGraph(window.appState || defaultState());
@@ -913,10 +929,12 @@ function renderLoginScreen() {
   app.innerHTML = `
     <div id="page-login" class="page active" style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:40px 24px;">
       <div class="login-wrapper fade-in" id="loginCard">
-        <div class="setup-header" style="margin-bottom:28px">
-          <div style="font-size:44px;margin-bottom:12px">🔒</div>
-          <h1 style="font-size:24px;letter-spacing:1px">COMMAND ACCESS GATE</h1>
-          <p style="color:var(--neon-green);font-family:var(--font-mono);font-size:12px;margin-top:6px;letter-spacing:0.5px">
+        <div class="setup-header" style="margin-bottom:28px;text-align:center">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:rgba(16,185,129,0.1);color:var(--accent-emerald);border:1px solid rgba(16,185,129,0.25);margin-bottom:16px">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.5px">COMMAND ACCESS GATE</h1>
+          <p style="color:var(--accent-emerald);font-family:var(--font-mono);font-size:12px;margin-top:6px;letter-spacing:0.5px">
             RESTRICTED SYSTEM • AUTHORIZED OPERATOR ONLY
           </p>
         </div>
@@ -940,13 +958,13 @@ function renderLoginScreen() {
 
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
               <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer">
-                <input type="checkbox" id="loginRemember" checked style="accent-color:var(--neon-green)">
+                <input type="checkbox" id="loginRemember" checked style="accent-color:var(--accent-emerald)">
                 <span>Remember this terminal</span>
               </label>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginSubmitBtn">
-              ⚡ Authenticate &amp; Access
+              Authenticate &amp; Access
             </button>
 
             <div id="loginFeedback" style="margin-top:16px;text-align:center;font-size:12px;font-family:var(--font-mono);display:none"></div>
@@ -1182,8 +1200,8 @@ function renderMainApp(state) {
     appEl.innerHTML = buildAppShell(state);
     renderDashboardPage(state);
 
-    // Nav listeners
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    // Nav listeners (desktop & mobile)
+    document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => showPage(btn.dataset.page));
     });
 
@@ -1225,16 +1243,16 @@ function buildAppShell(state) {
   return `
     <div id="topbar">
       <div class="topbar-logo">
-        <div class="logo-icon">⚡</div>
-        <span>AI CMD CENTER</span>
+        <div class="logo-icon">${ICONS.spark}</div>
+        <span>AI COMMAND</span>
       </div>
 
       <nav class="topbar-nav">
-        <button class="nav-btn active" data-page="dashboard">🏠 Dashboard</button>
-        <button class="nav-btn" data-page="roadmap">🗺️ Roadmap</button>
-        <button class="nav-btn" data-page="recall">🧠 Recall</button>
-        <button class="nav-btn" data-page="graph">🌌 Knowledge</button>
-        <button class="nav-btn" data-page="settings">⚙️ Settings</button>
+        <button class="nav-btn active" data-page="dashboard">${ICONS.dashboard}<span>Dashboard</span></button>
+        <button class="nav-btn" data-page="roadmap">${ICONS.roadmap}<span>Roadmap</span></button>
+        <button class="nav-btn" data-page="recall">${ICONS.recall}<span>Recall</span></button>
+        <button class="nav-btn" data-page="graph">${ICONS.graph}<span>Knowledge</span></button>
+        <button class="nav-btn" data-page="settings">${ICONS.settings}<span>Settings</span></button>
       </nav>
 
       <div class="topbar-right">
@@ -1243,13 +1261,37 @@ function buildAppShell(state) {
           <span id="syncText">Ready</span>
         </div>
         <div class="streak-display">
-          <span class="streak-flame">${sLevel.emoji}</span>
+          <span class="streak-flame">${ICONS.flame}</span>
           <span id="streakCount">${state.streak || 0}</span>
           <span style="font-size:11px;opacity:0.7">streak</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="logoutUser()" title="Lock Terminal" style="padding:6px 12px;font-size:12px;margin-left:6px">🔒 Lock</button>
+        <button class="btn btn-secondary btn-sm" onclick="logoutUser()" title="Lock Terminal" style="padding:6px 12px;font-size:12px;margin-left:6px;gap:6px">${ICONS.lock} <span>Lock</span></button>
       </div>
     </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobileNav">
+      <button class="mobile-nav-btn active" data-page="dashboard">
+        ${ICONS.dashboard}
+        <span>Dashboard</span>
+      </button>
+      <button class="mobile-nav-btn" data-page="roadmap">
+        ${ICONS.roadmap}
+        <span>Roadmap</span>
+      </button>
+      <button class="mobile-nav-btn" data-page="recall">
+        ${ICONS.recall}
+        <span>Recall</span>
+      </button>
+      <button class="mobile-nav-btn" data-page="graph">
+        ${ICONS.graph}
+        <span>Galaxy</span>
+      </button>
+      <button class="mobile-nav-btn" data-page="settings">
+        ${ICONS.settings}
+        <span>Settings</span>
+      </button>
+    </nav>
 
     <!-- Pages -->
     <div id="page-dashboard" class="page active">
@@ -1317,49 +1359,59 @@ function renderDashboardPage(state) {
   container.innerHTML = `
     <!-- Morning Greeting -->
     <div class="morning-greeting fade-in">
-      <div class="greeting-day-label">Day ${currentDay} of 90 — ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
-      <div class="title-badge">${title.icon} ${title.title}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="greeting-day-label">DAY ${currentDay} OF 90 • ${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase()}</div>
+        <div class="title-badge">${title.icon} ${title.title}</div>
+      </div>
       <h2 class="greeting-title">
-        ${isDayDone ? '✅ Day Completed!' : `Today's Mission: <span>${roadmapDay?.title || 'Study Day'}</span>`}
+        ${isDayDone ? 'Day Completed!' : `Today's Mission: <span>${roadmapDay?.title || 'Study Day'}</span>`}
       </h2>
       <p class="greeting-mission">${morningMsg}</p>
       <div class="greeting-meta">
-        <div class="meta-chip green"><span class="chip-icon">📅</span> Day ${currentDay}/90</div>
-        <div class="meta-chip amber"><span class="chip-icon">⏱️</span> Target: ${state.targetHours || 10}h</div>
-        <div class="meta-chip cyan"><span class="chip-icon">📈</span> ${progress}% Journey Complete</div>
-        <div class="meta-chip"><span class="chip-icon">📚</span> ${completedCount} Days Done</div>
+        <div class="meta-chip green">${ICONS.calendar} Day ${currentDay}/90</div>
+        <div class="meta-chip amber">${ICONS.clock} Target: ${state.targetHours || 10}h</div>
+        <div class="meta-chip cyan">${ICONS.spark} ${progress}% Complete</div>
+        <div class="meta-chip">${ICONS.check} ${completedCount} Days Done</div>
       </div>
     </div>
 
     <!-- Stats Row -->
     <div class="stats-row fade-in">
       <div class="glass-card stat-card">
-        <div class="stat-icon">🔥</div>
+        <div class="stat-card-header">
+          <span class="stat-label">Day Streak</span>
+          <div class="stat-icon" style="color:var(--accent-amber)">${ICONS.flame}</div>
+        </div>
         <div class="stat-value">${state.streak || 0}</div>
-        <div class="stat-label">Day Streak</div>
       </div>
       <div class="glass-card stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value cyan">${totalHours}</div>
-        <div class="stat-label">Total Hours</div>
+        <div class="stat-card-header">
+          <span class="stat-label">Total Hours</span>
+          <div class="stat-icon" style="color:var(--accent-cyan)">${ICONS.clock}</div>
+        </div>
+        <div class="stat-value cyan">${totalHours}h</div>
       </div>
       <div class="glass-card stat-card">
-        <div class="stat-icon">✅</div>
+        <div class="stat-card-header">
+          <span class="stat-label">Days Complete</span>
+          <div class="stat-icon" style="color:var(--accent-emerald)">${ICONS.check}</div>
+        </div>
         <div class="stat-value">${completedCount}</div>
-        <div class="stat-label">Days Complete</div>
       </div>
       <div class="glass-card stat-card">
-        <div class="stat-icon">⚡</div>
+        <div class="stat-card-header">
+          <span class="stat-label">Spark Ideas</span>
+          <div class="stat-icon" style="color:var(--accent-purple)">${ICONS.spark}</div>
+        </div>
         <div class="stat-value amber">${state.sparkIdeas?.length || 0}</div>
-        <div class="stat-label">Spark Ideas</div>
       </div>
     </div>
 
     <!-- Progress Bar -->
-    <div class="glass-card fade-in" style="padding:20px;margin-bottom:24px">
-      <div class="flex justify-between items-center" style="margin-bottom:8px">
-        <span class="font-mono" style="font-size:12px;color:var(--text-muted)">90-DAY PROGRESS</span>
-        <span class="font-mono" style="font-size:13px;color:var(--neon-green)">${progress}%</span>
+    <div class="glass-card fade-in" style="padding:18px 24px;margin-bottom:24px">
+      <div class="flex justify-between items-center" style="margin-bottom:10px">
+        <span class="font-mono" style="font-size:11px;font-weight:600;letter-spacing:0.8px;color:var(--text-muted)">90-DAY MISSION TIMELINE</span>
+        <span class="font-mono" style="font-size:13px;font-weight:700;color:var(--accent-emerald)">${progress}%</span>
       </div>
       <div class="progress-track">
         <div class="progress-fill" style="width:${progress}%"></div>
@@ -1386,23 +1438,28 @@ function renderDayComplete(currentDay, state) {
   const nextRD  = getRoadmapDay(nextDay);
 
   return `
-    <div class="glass-card fade-in" style="padding:32px;text-align:center;border-color:rgba(0,255,150,0.4)">
+    <div class="glass-card fade-in" style="padding:32px;text-align:center;border-color:rgba(16,185,129,0.3)">
       <div style="font-size:48px;margin-bottom:16px">🎉</div>
-      <h3 style="color:var(--neon-green);font-family:var(--font-mono);font-size:20px;margin-bottom:8px">
+      <h3 style="color:var(--accent-emerald);font-family:var(--font-mono);font-size:20px;margin-bottom:8px">
         Day ${currentDay} Complete!
       </h3>
       <p style="color:var(--text-secondary);margin-bottom:24px">${log.hours}h logged • GitHub committed • ${log.voiceUrl ? 'Voice synced' : 'Voice local'}</p>
 
       ${nextRD ? `
-        <div style="padding:16px;background:rgba(0,229,255,0.06);border-radius:14px;border:1px solid rgba(0,229,255,0.2);text-align:left">
+        <div style="padding:16px;background:rgba(6,182,212,0.06);border-radius:14px;border:1px solid rgba(6,182,212,0.2);text-align:left">
           <div class="section-label">Tomorrow's Mission</div>
           <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px">Day ${nextDay}: ${nextRD.title}</div>
           <div style="font-size:13px;color:var(--text-muted)">${(nextRD.topics || []).slice(0,3).join(' • ')}</div>
         </div>
-      ` : '<p style="color:var(--neon-green);font-size:18px;font-weight:700">🏆 Journey Complete! You are an AI Engineer!</p>'}
+      ` : '<p style="color:var(--accent-emerald);font-size:18px;font-weight:700">🏆 Journey Complete! You are an AI Engineer!</p>'}
     </div>
   `;
 }
+
+window.toggleBlock = function(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('expanded');
+};
 
 function renderDayBlocks(dayNum, roadmapDay, state) {
   const topics = (roadmapDay?.topics || []).map(t => `<li class="sq-item"><span class="sq-bullet">▸</span>${t}</li>`).join('');
@@ -1410,7 +1467,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
     .map((q,i) => `<li class="sq-item"><span class="sq-bullet">${i+1}.</span>${q}</li>`).join('');
 
   return `
-  <div class="grid-2 fade-in" style="margin-bottom:24px">
+  <div class="dashboard-grid fade-in" style="margin-bottom:24px">
     <!-- LEFT: Day Blocks -->
     <div>
       <div class="section-label">⚡ Today's Mission Blocks</div>
@@ -1418,7 +1475,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
         <!-- Block 1: Deep Study -->
         <div class="block-card expanded" id="block-1">
-          <div class="block-header">
+          <div class="block-header" onclick="toggleBlock('block-1')">
             <div class="block-number block-num-1">B1</div>
             <div class="block-info">
               <div class="block-name">Deep Study</div>
@@ -1444,7 +1501,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
         <!-- Block 2: Build -->
         <div class="block-card" id="block-2">
-          <div class="block-header">
+          <div class="block-header" onclick="toggleBlock('block-2')">
             <div class="block-number block-num-2">B2</div>
             <div class="block-info">
               <div class="block-name">Build Session</div>
@@ -1468,7 +1525,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
         <!-- Block 3: Practice -->
         <div class="block-card" id="block-3">
-          <div class="block-header">
+          <div class="block-header" onclick="toggleBlock('block-3')">
             <div class="block-number block-num-3">B3</div>
             <div class="block-info">
               <div class="block-name">Practice Session</div>
@@ -1488,7 +1545,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
         <!-- Block 4: Voice Explanation -->
         <div class="block-card" id="block-4">
-          <div class="block-header">
+          <div class="block-header" onclick="toggleBlock('block-4')">
             <div class="block-number block-num-4">B4</div>
             <div class="block-info">
               <div class="block-name">Voice Explanation</div>
@@ -1519,7 +1576,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
         <!-- Block 5: Reflection -->
         <div class="block-card" id="block-5">
-          <div class="block-header">
+          <div class="block-header" onclick="toggleBlock('block-5')">
             <div class="block-number block-num-5">B5</div>
             <div class="block-info">
               <div class="block-name">Daily Reflection</div>
