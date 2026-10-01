@@ -1,27 +1,28 @@
 /* ============================================================
    AI ENGINEER COMMAND CENTER — MASTER STYLESHEET
-   Linear & Vercel Aesthetic | Obsidian Slate Dark Mode | Mobile First
+   Raycast & Cursor IDE Aesthetic | Matte Obsidian (#080B11) | Mobile First
    ============================================================ */
 
 :root {
-  /* Color Palette - Premium Obsidian & Slate */
-  --bg-primary: #090d16;
-  --bg-secondary: #0f172a;
-  --bg-card: rgba(17, 24, 39, 0.72);
-  --bg-card-hover: rgba(30, 41, 59, 0.75);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-active: rgba(16, 185, 129, 0.08);
+  /* Color Palette - Raycast & Cursor Matte Obsidian */
+  --bg-primary: #080b11;
+  --bg-secondary: #0c1017;
+  --bg-card: rgba(13, 17, 26, 0.88);
+  --bg-card-hover: rgba(18, 24, 38, 0.98);
+  --bg-glass: rgba(255, 255, 255, 0.025);
+  --bg-glass-active: rgba(56, 189, 248, 0.08);
 
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-glass: rgba(255, 255, 255, 0.1);
-  --border-active: rgba(16, 185, 129, 0.4);
-  --border-focus: #10b981;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-active: #38bdf8;
+  --border-focus: #38bdf8;
 
   /* Accent Colors */
+  --accent-cyan: #38bdf8;
   --accent-emerald: #10b981;
   --accent-emerald-light: #34d399;
-  --accent-cyan: #06b6d4;
-  --accent-violet: #8b5cf6;
+  --accent-indigo: #6366f1;
+  --accent-violet: #818cf8;
   --accent-amber: #f59e0b;
   --accent-red: #ef4444;
 
@@ -29,26 +30,26 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-accent: #10b981;
+  --text-accent: #38bdf8;
 
-  /* Glows & Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  /* Glows & Shadows — Tactile Raycast Inset Highlights */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glow-cyan: 0 0 20px rgba(56, 189, 248, 0.2);
   --glow-emerald: 0 0 20px rgba(16, 185, 129, 0.2);
-  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.2);
 
-  /* Radii */
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Precise Developer Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Transitions */
-  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Fonts */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1733,4 +1734,209 @@ body::after {
   font-weight: 600;
   font-family: var(--font-mono);
   white-space: nowrap;
+}
+
+/* ─── RAYCAST KEYBOARD SHORTCUT BADGES ───────────────────────── */
+.kbd-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+/* ─── DEDICATED ENGLISH MASTERY HUB PAGE ──────────────────────── */
+.english-hero-banner {
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(13, 17, 26, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.english-hero-banner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.fluency-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .fluency-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.fluency-stat-card {
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.fluency-stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.fluency-stat-value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vocab-vault-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.vocab-card {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.vocab-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+.vocab-word {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  margin-bottom: 2px;
+}
+
+.vocab-phonetic {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 6px;
+}
+
+.vocab-definition {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.vocab-example {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(56, 189, 248, 0.05);
+  border-radius: var(--radius-xs);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--accent-cyan);
+}
+
+.curriculum-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+@media (max-width: 768px) {
+  .curriculum-phase-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.curriculum-card {
+  padding: 16px;
+  background: rgba(13, 17, 26, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.curriculum-phase-badge {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.curriculum-phase-badge.phase-1 { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); }
+.curriculum-phase-badge.phase-2 { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); }
+.curriculum-phase-badge.phase-3 { background: rgba(129, 140, 248, 0.15); color: var(--accent-violet); }
+.curriculum-phase-badge.phase-4 { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+
+.audio-archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.audio-archive-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.audio-archive-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.copy-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-xs);
+  color: var(--accent-cyan);
+  font-size: 11px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.copy-btn-action:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #fff;
 }

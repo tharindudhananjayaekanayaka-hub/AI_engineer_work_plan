@@ -48,7 +48,11 @@ const ICONS = {
   pause: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
   reset: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>`,
   maximize: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`,
-  minimize: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`
+  minimize: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`,
+  mic: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
+  copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  volume: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
+  book: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
 };
 
 const ENGINEER_TITLES = [
@@ -1116,6 +1120,7 @@ function showPage(pageId) {
   if (pageId === 'graph')    buildKnowledgeGraph(window.appState || defaultState());
   if (pageId === 'recall')   renderRecallPage();
   if (pageId === 'roadmap')  renderRoadmapPage();
+  if (pageId === 'english')  renderEnglishPage();
   if (pageId === 'settings') renderSettingsPage();
 }
 
@@ -1450,6 +1455,7 @@ function buildAppShell(state) {
       <nav class="topbar-nav">
         <button class="nav-btn active" data-page="dashboard">${ICONS.dashboard}<span>Dashboard</span></button>
         <button class="nav-btn" data-page="roadmap">${ICONS.roadmap}<span>Roadmap</span></button>
+        <button class="nav-btn" data-page="english">${ICONS.mic}<span>English Hub</span></button>
         <button class="nav-btn" data-page="recall">${ICONS.recall}<span>Recall</span></button>
         <button class="nav-btn" data-page="graph">${ICONS.graph}<span>Knowledge</span></button>
         <button class="nav-btn" data-page="settings">${ICONS.settings}<span>Settings</span></button>
@@ -1479,13 +1485,13 @@ function buildAppShell(state) {
         ${ICONS.roadmap}
         <span>Roadmap</span>
       </button>
+      <button class="mobile-nav-btn" data-page="english">
+        ${ICONS.mic}
+        <span>English</span>
+      </button>
       <button class="mobile-nav-btn" data-page="recall">
         ${ICONS.recall}
         <span>Recall</span>
-      </button>
-      <button class="mobile-nav-btn" data-page="graph">
-        ${ICONS.graph}
-        <span>Galaxy</span>
       </button>
       <button class="mobile-nav-btn" data-page="settings">
         ${ICONS.settings}
@@ -1499,6 +1505,9 @@ function buildAppShell(state) {
     </div>
     <div id="page-roadmap" class="page">
       <div class="container" id="roadmapContent"></div>
+    </div>
+    <div id="page-english" class="page">
+      <div class="container" id="englishContent"></div>
     </div>
     <div id="page-recall" class="page">
       <div class="container" id="recallContent"></div>
@@ -1824,6 +1833,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
   const topics = (roadmapDay?.topics || []).map(t => `<li class="sq-item"><span class="sq-bullet">▸</span>${t}</li>`).join('');
   const studyQs = (roadmapDay?.studyQuestions || roadmapDay?.reviewQuestions || [])
     .map((q,i) => `<li class="sq-item"><span class="sq-bullet">${i+1}.</span>${q}</li>`).join('');
+  const eng = getEnglishDayData(dayNum, roadmapDay);
 
   return `
   <div class="dashboard-grid fade-in" style="margin-bottom:24px">
@@ -1916,11 +1926,10 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
             <div class="english-track-grid">
               <!-- Track 1: Technical Feynman Explanation -->
               <div class="english-track-card">
-                <div class="track-tag">PART 1 • 60 MIN</div>
+                <div class="track-tag">PART 1 • 60 MIN • FEYNMAN SPEECH</div>
                 <div class="track-title">🎙️ Technical Explanation in English</div>
-                <p class="track-desc">
-                  Close all notes. Explain today's concepts <strong style="color:var(--text-primary)">out loud in English</strong> as if presenting to an international engineering team. Record and listen back.
-                </p>
+                <p class="track-desc">${eng.speechPrompt}</p>
+
                 <div class="voice-recorder">
                   <div class="recorder-controls">
                     <button class="record-btn" id="recordBtn">
@@ -1935,21 +1944,33 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
                     <button class="btn btn-secondary btn-sm" id="voiceUpload" style="display:none">☁️ Upload to Cloud</button>
                   </div>
                 </div>
+
+                <div style="margin-top:14px">
+                  <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">KEY VOCABULARY TO USE:</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    ${eng.techVocab.map(v => `<span class="badge badge-cyan" onclick="pronounceWord('${v.word}')" style="cursor:pointer" title="Click to hear pronunciation">🔊 ${v.word}</span>`).join('')}
+                  </div>
+                </div>
               </div>
 
               <!-- Track 2: Spoken Interview Simulation -->
               <div class="english-track-card">
-                <div class="track-tag">PART 2 • 60 MIN</div>
+                <div class="track-tag">PART 2 • 60 MIN • INTERVIEW DRILL</div>
                 <div class="track-title">🗣️ AI Engineering Spoken Interview</div>
                 <p class="track-desc">
-                  Simulate a live international tech interview. Put your phone/desktop on ChatGPT or Claude Voice Mode and articulate your answers out loud.
+                  <strong style="color:var(--text-primary)">FAANG Interview Question:</strong> ${eng.interviewQuestion}
                 </p>
                 <div class="interview-prompt-box">
-                  <div style="font-size:11px;font-weight:600;color:var(--text-primary);margin-bottom:4px">Recommended Voice Mode Prompt:</div>
-                  <code>"Act as a Principal AI Engineer interviewing me for a Senior AI Role. Ask me tough technical questions on today's topic and critique my spoken fluency and structure."</code>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <span style="font-size:11px;font-weight:600;color:var(--accent-cyan)">Prompt for ChatGPT / Claude Voice Mode:</span>
+                    <button class="copy-btn-action" id="b4CopyBtn" onclick="copyTextToClipboard(\`${eng.voicePrompt.replace(/`/g, '\\`')}\`, 'b4CopyBtn')">
+                      ${ICONS.copy} Copy Prompt
+                    </button>
+                  </div>
+                  <code>"${eng.voicePrompt}"</code>
                 </div>
                 <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">
-                  💡 Focus: Eliminate filler words, pronounce technical terms clearly, and speak with steady confidence.
+                  💡 Focus: Eliminate filler words, speak with steady cadence, and structure answers with STAR / Framework logic.
                 </div>
               </div>
             </div>
@@ -2375,6 +2396,348 @@ function renderSkillBars(state) {
         </div>
         <div class="skill-bar-track">
           <div class="skill-bar-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── ENGLISH MASTERY & TECH COMMUNICATION HUB ─────────────────
+
+const TECH_VOCAB_BANKS = {
+  w1: [
+    { word: "Encapsulation", phonetic: "/ɪnˌkæp.sjʊˈleɪ.ʃən/", def: "Bundling data and methods within a single unit to restrict direct access to internals.", example: "Encapsulation prevents unauthorized outer layers from mutating internal state." },
+    { word: "Polymorphism", phonetic: "/ˌpɒl.iˈmɔː.fɪ.zəm/", def: "The ability of different objects to respond to the same interface in their own distinct way.", example: "We leverage polymorphism to swap storage backends without changing business logic." },
+    { word: "Idempotent", phonetic: "/aɪˈdɛm.pəʊ.tənt/", def: "An operation that produces the exact same result no matter how many times it executes.", example: "Our API PUT endpoints must remain strictly idempotent." },
+    { word: "Abstraction", phonetic: "/æbˈstræk.ʃən/", def: "Hiding complex background mechanics and presenting a clean, minimal interface.", example: "The interface provides a clean abstraction over the distributed database." }
+  ],
+  w2: [
+    { word: "Time Complexity", phonetic: "/taɪm kəmˈplɛk.sɪ.ti/", def: "Computational complexity describing how execution time scales with input size.", example: "Hash map lookups provide amortized O(1) time complexity." },
+    { word: "Deterministic", phonetic: "/dɪˌtɜː.mɪˈnɪs.tɪk/", def: "An algorithm that consistently yields the exact same output given the same input.", example: "State transitions in our agent loop must remain deterministic." },
+    { word: "Concurrency", phonetic: "/kənˈkʌr.ən.si/", def: "The ability of different parts of a program to be executed out-of-order or in partial order.", example: "Async IO allows massive concurrency without thread-switching overhead." },
+    { word: "Throughput", phonetic: "/ˈθruː.pʊt/", def: "The amount of data or operations processed by a system in a given period of time.", example: "Batching requests significantly boosts indexing throughput." }
+  ],
+  w3: [
+    { word: "Asynchronous", phonetic: "/eɪˈsɪŋ.krə.nəs/", def: "Operations occurring independently of the main program thread without blocking execution.", example: "FastAPI handles asynchronous database queries via the asyncio event loop." },
+    { word: "Middleware", phonetic: "/ˈmɪd.əl.weər/", def: "Software layer providing services to applications beyond those available from the OS.", example: "Authentication and rate-limiting are enforced in our custom middleware." },
+    { word: "Payload", phonetic: "/ˈpeɪ.ləʊd/", def: "The essential cargo of data transmitted in an HTTP request or event stream.", example: "The webhook payload contains JSON-serialized event telemetry." },
+    { word: "Latency", phonetic: "/ˈleɪ.tən.si/", def: "The time elapsed between a request initiation and the receipt of its initial response.", example: "We optimized database indexing to reduce end-to-end P99 latency below 50ms." }
+  ],
+  w4: [
+    { word: "Convergence", phonetic: "/kənˈvɜː.dʒəns/", def: "The state reached when optimization loss ceases to decrease significantly.", example: "Gradient descent reached smooth convergence after 40 epochs." },
+    { word: "Overfitting", phonetic: "/ˌəʊ.vəˈfɪt.ɪŋ/", def: "When a model learns training noise instead of the underlying general distribution.", example: "Regularization and dropout were added to mitigate severe overfitting." },
+    { word: "Hyperparameter", phonetic: "/ˌhaɪ.pə.pəˈræm.ɪ.tər/", def: "A configuration variable external to the model whose value is chosen prior to training.", example: "Learning rate is the most critical hyperparameter to tune systematically." },
+    { word: "Dimensionality", phonetic: "/daɪˌmɛn.ʃəˈnæl.ɪ.ti/", def: "The number of distinct input features or attributes present in a dataset.", example: "We applied PCA to compress high feature dimensionality into 32 orthogonal components." }
+  ],
+  w5: [
+    { word: "Backpropagation", phonetic: "/ˌbæk.prɒp.əˈɡeɪ.ʃən/", def: "Algorithm calculating loss gradients with respect to neural network weights via chain rule.", example: "Backpropagation computes the exact gradient vectors needed to update weights." },
+    { word: "Activation Function", phonetic: "/ˌæk.tɪˈveɪ.ʃən ˈfʌŋk.ʃən/", def: "Mathematical function mapping a neuron's weighted inputs to its output activation.", example: "GELU provides smoother non-linear activation than standard piecewise ReLU." },
+    { word: "Gradient", phonetic: "/ˈɡreɪ.di.ənt/", def: "Vector representing the directional rate of maximum increase of the loss landscape.", example: "Gradient clipping prevents exploding gradients during deep backpropagation." },
+    { word: "Tensors", phonetic: "/ˈtɛn.sərz/", def: "Multi-dimensional algebraic arrays operating as primary data structures in deep learning.", example: "PyTorch maps tensor operations directly to GPU CUDA cores." }
+  ],
+  w6: [
+    { word: "Tokenization", phonetic: "/ˌtəʊ.kən.aɪˈzeɪ.ʃən/", def: "Segmenting natural language text into discrete sub-word tokens for LLM processing.", example: "Byte-Pair Encoding tokenization handles unseen vocabulary via subwords." },
+    { word: "Attention Mechanism", phonetic: "/əˈtɛn.ʃən ˈmɛk.ə.nɪ.zəm/", def: "Architecture calculating dynamic contextual affinities between all tokens in a sequence.", example: "Self-attention computes affinity scores allowing tokens to gather context across the prompt." },
+    { word: "Temperature", phonetic: "/ˈtɛm.prə.tʃər/", def: "Hyperparameter governing the entropy and randomness of sampled output logits.", example: "We set temperature to 0.0 for deterministic JSON tool-call schema compliance." },
+    { word: "Context Window", phonetic: "/ˈkɒn.tɛkst ˈwɪn.dəʊ/", def: "The maximum token sequence length an attention model can simultaneously ingest.", example: "The 128k context window allows full-codebase repository ingestion." }
+  ],
+  w7: [
+    { word: "Embedding", phonetic: "/ɪmˈbɛd.ɪŋ/", def: "Dense continuous vector projection capturing semantic meaning and contextual proximity.", example: "Cosine distance between embeddings determines dense retrieval relevance." },
+    { word: "Chunking", phonetic: "/ˈtʃʌŋk.ɪŋ/", def: "Dividing source text into semantically cohesive passages suitable for vector search.", example: "Hierarchical chunking preserves macro document context alongside granular passages." },
+    { word: "Reranking", phonetic: "/riːˈræŋk.ɪŋ/", def: "Cross-encoder scoring of retrieved candidate passages to optimize top-k relevance.", example: "A cross-encoder reranker improves top-3 precision by over 25%." },
+    { word: "Hallucination", phonetic: "/həˌluː.sɪˈneɪ.ʃən/", def: "Plausible-sounding but factually ungrounded output generated by generative models.", example: "Strict RAG source attribution prevents factual hallucination in answers." }
+  ],
+  w8: [
+    { word: "Autonomous", phonetic: "/ɔːˈtɒn.ə.məs/", def: "Capable of independent self-directed reasoning, decision making, and tool invocation.", example: "The agent autonomously handles transient API rate limits and retries." },
+    { word: "ReAct Pattern", phonetic: "/riːˈækt ˈpæt.ərn/", def: "Synergistic framework interleaving explicit Reasoning steps with Action execution.", example: "The ReAct loop reasons about the current observation before invoking SQL tools." },
+    { word: "State Machine", phonetic: "/steɪt məˈʃiːn/", def: "Mathematical model of computation consisting of finite states, events, and transitions.", example: "LangGraph compiles the agent workflow into a deterministic state graph." },
+    { word: "Orchestration", phonetic: "/ˌɔː.kɪˈstreɪ.ʃən/", def: "Automated configuration, coordination, and management of distributed agent systems.", example: "The supervisor agent handles orchestration across specialized code and review agents." }
+  ],
+  w9: [
+    { word: "Interoperability", phonetic: "/ˌɪn.tərˌɒp.ər.əˈbɪl.ə.ti/", def: "The ability of diverse computer systems or protocols to seamlessly exchange information.", example: "Model Context Protocol ensures standard tool interoperability across LLMs." },
+    { word: "Decoupled", phonetic: "/diːˈkʌp.əld/", def: "Architecting software components so they execute independently with minimal mutual reliance.", example: "The MCP server is completely decoupled from client agent implementations." },
+    { word: "Subagent", phonetic: "/sʌbˈeɪ.dʒənt/", def: "A specialized secondary agent assigned a delegated sub-task by an orchestrator.", example: "The orchestrator spawned a research subagent to survey documentation." },
+    { word: "Protocol", phonetic: "/ˈprəʊ.tə.kɒl/", def: "A formalized system of communication rules governing data transmission between devices.", example: "JSON-RPC 2.0 acts as the lightweight wire protocol for our tool-calling interface." }
+  ],
+  w10: [
+    { word: "Containerization", phonetic: "/kənˌteɪ.nər.aɪˈzeɪ.ʃən/", def: "Encapsulating application code alongside dependencies into lightweight executable images.", example: "Docker containerization guarantees strict parity between local dev and cloud clusters." },
+    { word: "Scalability", phonetic: "/ˌskeɪ.ləˈbɪl.ə.ti/", def: "The property of a system to handle growing operational demands by adding resources.", example: "Stateless container pods enable horizontal autoscaling under sudden traffic spikes." },
+    { word: "Observability", phonetic: "/əbˌzɜː.vəˈbɪl.ə.ti/", def: "Quantifying internal execution states through exterior telemetry, logs, and traces.", example: "OpenTelemetry distributed tracing provides total observability across microservices." },
+    { word: "Idempotency", phonetic: "/ˌaɪ.dɛmˈpəʊ.tən.si/", def: "Ensuring identical multiple requests produce identical side-effects without duplication.", example: "Distributed idempotency keys in Redis protect payment endpoints against duplicates." }
+  ]
+};
+
+function getEnglishDayData(dayNum, roadmapDay) {
+  const title = roadmapDay?.title || 'Core Engineering Architecture';
+  const topics = roadmapDay?.topics || ['Software Architecture', 'System Design'];
+
+  let phase = "Phase 1: Foundations & Architecture Speech (Days 1–21)";
+  if (dayNum > 21 && dayNum <= 42) phase = "Phase 2: Explaining ML & Math Out Loud (Days 22–42)";
+  if (dayNum > 42 && dayNum <= 63) phase = "Phase 3: RAG, LLM & Multi-Agent System Articulation (Days 43–63)";
+  if (dayNum > 63) phase = "Phase 4: Senior FAANG System Design & Interview Mastery (Days 64–90)";
+
+  const weekNum = Math.min(10, Math.ceil(dayNum / 7));
+  const vocab = TECH_VOCAB_BANKS[`w${weekNum}`] || TECH_VOCAB_BANKS.w1;
+
+  const speechPrompt = `Close all notes. Speak continuously in English for 3–5 minutes explaining: "${title}". Cover: 1) What fundamental engineering problem it solves, 2) How you structured your implementation today, 3) Key trade-offs, edge-cases, and production risks considered.`;
+
+  const interviewQuestion = `In a senior AI engineering interview: "Walk me through how you would architect ${topics[0] || 'this component'} in production. What failure modes do you anticipate under high concurrency, and how do you monitor them?"`;
+
+  const voicePrompt = `You are a Principal AI Engineer conducting a senior technical interview. Ask me one tough, probing question about "${title}" and "${topics.slice(0, 2).join(', ')}". Wait for my spoken answer, then give brief feedback on my technical depth, clarity, and communication structure.`;
+
+  return {
+    dayNum,
+    phase,
+    title,
+    speechPrompt,
+    techVocab: vocab,
+    interviewQuestion,
+    voicePrompt
+  };
+}
+
+window.copyTextToClipboard = async function(text, btnId) {
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = `${ICONS.check} Copied!`;
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+    showToast('📋 Copied to clipboard! Ready to paste into ChatGPT/Claude Voice.', 'success');
+  } catch (err) {
+    showToast('Failed to copy', 'error');
+  }
+};
+
+window.pronounceWord = function(word) {
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(word);
+      utter.lang = 'en-US';
+      utter.rate = 0.88;
+      window.speechSynthesis.speak(utter);
+    } else {
+      showToast(`🔊 ${word}`, 'info');
+    }
+  } catch (_) {}
+};
+
+function renderEnglishPage(state) {
+  const container = document.getElementById('englishContent');
+  if (!container) return;
+  state = state || window.appState || defaultState();
+
+  const currentDay = state.currentDay || 1;
+  const roadmapDay = getRoadmapDay(currentDay);
+  const englishData = getEnglishDayData(currentDay, roadmapDay);
+
+  const completed = Object.values(state.completedDays || {});
+  const voiceRecordingsCount = completed.filter(d => d.voiceRecorded || d.voiceUrl).length;
+  const speakingStreak = state.streak || 0;
+  const spokenHours = (voiceRecordingsCount * 2);
+
+  container.innerHTML = `
+    <!-- Hero Banner -->
+    <div class="english-hero-banner fade-in">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px">
+        <span class="meta-chip green" style="font-size:11px">${ICONS.mic} 90-DAY TECHNICAL ENGLISH COMMAND HUB</span>
+        <span class="meta-chip cyan" style="font-size:11px">TARGET: 2 HOURS DAILY</span>
+      </div>
+      <h2 style="font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-0.02em;margin-bottom:6px">
+        Spoken English &amp; FAANG Interview Mastery
+      </h2>
+      <p style="color:var(--text-secondary);font-size:13.5px;max-width:720px;line-height:1.6">
+        Great code means nothing if you cannot articulate it with effortless authority. Build the international English fluency required to lead global engineering teams and pass top-tier technical interviews.
+      </p>
+    </div>
+
+    <!-- Fluency Stats Row -->
+    <div class="fluency-stats-grid fade-in">
+      <div class="fluency-stat-card">
+        <div class="fluency-stat-label">Speaking Streak</div>
+        <div class="fluency-stat-value" style="color:var(--accent-amber)">${speakingStreak} Days</div>
+      </div>
+      <div class="fluency-stat-card">
+        <div class="fluency-stat-label">Voice Recordings</div>
+        <div class="fluency-stat-value" style="color:var(--accent-cyan)">${voiceRecordingsCount} Logged</div>
+      </div>
+      <div class="fluency-stat-card">
+        <div class="fluency-stat-label">Spoken Hours Target</div>
+        <div class="fluency-stat-value" style="color:var(--accent-emerald)">${spokenHours} / 180h</div>
+      </div>
+      <div class="fluency-stat-card">
+        <div class="fluency-stat-label">Fluency Level</div>
+        <div class="fluency-stat-value" style="color:var(--accent-violet)">
+          ${currentDay < 22 ? 'Technical Novice' : currentDay < 43 ? 'Systems Articulator' : currentDay < 64 ? 'Arch Lead Speaker' : 'FAANG Fluent Lead'}
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Active English Drill -->
+    <div class="glass-card fade-in" style="padding:24px;margin-bottom:24px">
+      <div class="flex justify-between items-center" style="margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-label" style="margin:0">🎙️ TODAY'S SPOKEN DRILL — DAY ${currentDay}</div>
+        <span class="badge badge-cyan" style="font-size:11px">${englishData.phase}</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:600;margin-bottom:8px;color:var(--text-primary)">
+        ${englishData.title}
+      </h3>
+
+      <!-- 2-Track Grid -->
+      <div class="english-track-grid" style="margin-top:16px">
+        <!-- Track 1: Feynman Speech -->
+        <div class="english-track-card">
+          <div class="track-tag">PART 1 • 60 MIN • FEYNMAN EXPLANATION</div>
+          <div class="track-title">Out-Loud Technical Speech Drill</div>
+          <p class="track-desc">${englishData.speechPrompt}</p>
+
+          <div style="margin-top:14px">
+            <button class="btn btn-primary btn-sm" onclick="showPage('dashboard'); setTimeout(() => toggleBlock('block-4'), 300);" style="gap:6px">
+              ${ICONS.mic} Go to Block 4 Voice Recorder
+            </button>
+          </div>
+        </div>
+
+        <!-- Track 2: AI Voice Interview -->
+        <div class="english-track-card">
+          <div class="track-tag">PART 2 • 60 MIN • INTERVIEW SIMULATION</div>
+          <div class="track-title">FAANG AI Technical Question</div>
+          <p class="track-desc">
+            <strong style="color:var(--text-primary)">Question:</strong> ${englishData.interviewQuestion}
+          </p>
+
+          <div class="interview-prompt-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:11px;font-weight:600;color:var(--accent-cyan)">Prompt for ChatGPT / Claude Voice Mode:</span>
+              <button class="copy-btn-action" id="copyPromptBtn" onclick="copyTextToClipboard(\`${englishData.voicePrompt.replace(/`/g, '\\`')}\`, 'copyPromptBtn')">
+                ${ICONS.copy} Copy Prompt
+              </button>
+            </div>
+            <code>"${englishData.voicePrompt}"</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Vocabulary Flashcards -->
+      <div style="margin-top:20px">
+        <div class="section-label">📚 High-Impact Technical Vocabulary for Today (Click 🔊 to hear pronunciation)</div>
+        <div class="vocab-vault-grid">
+          ${englishData.techVocab.map(v => `
+            <div class="vocab-card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="vocab-word">${v.word}</span>
+                <button class="btn btn-secondary btn-sm" onclick="pronounceWord('${v.word}')" title="Listen pronunciation" style="padding:2px 8px;font-size:12px">
+                  ${ICONS.volume}
+                </button>
+              </div>
+              <div class="vocab-phonetic">${v.phonetic}</div>
+              <div class="vocab-definition">${v.def}</div>
+              <div class="vocab-example">"${v.example}"</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- 90-Day Communication Curriculum -->
+    <div class="glass-card fade-in" style="padding:24px;margin-bottom:24px">
+      <div class="section-label">🗺️ 90-Day Technical Communication Curriculum</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">Structured progression from fundamental syntax articulation to executive architecture defense.</p>
+
+      <div class="curriculum-phase-grid">
+        <div class="curriculum-card">
+          <span class="curriculum-phase-badge phase-1">Phase 1 • Days 1–21</span>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">Core Technical Articulation &amp; Code Walkthroughs</div>
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+            Explaining OOP principles, method resolution order, clean architecture, data structures, and REST API design in fluent English. Eliminating filler words (uh, um, like) and developing a confident speaking rhythm.
+          </p>
+        </div>
+
+        <div class="curriculum-card">
+          <span class="curriculum-phase-badge phase-2">Phase 2 • Days 22–42</span>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">Explaining Machine Learning &amp; Math in English</div>
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+            Articulating mathematical intuition behind backpropagation, gradient descent, tensor transformations, attention mechanisms, and cross-entropy loss out loud without scripts.
+          </p>
+        </div>
+
+        <div class="curriculum-card">
+          <span class="curriculum-phase-badge phase-3">Phase 3 • Days 43–63</span>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">RAG, LLM &amp; Multi-Agent System Articulation</div>
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+            Pitching and defending agentic architectures, tool-calling loops, context window limits, vector indexing strategies, and prompt injection mitigation in English.
+          </p>
+        </div>
+
+        <div class="curriculum-card">
+          <span class="curriculum-phase-badge phase-4">Phase 4 • Days 64–90</span>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">Senior FAANG System Design &amp; Leadership</div>
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+            High-pressure mock interview simulations, system design whiteboarding, trade-off defense (latency vs cost vs accuracy), and behavioral interview mastery.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Archive -->
+    <div class="glass-card fade-in" style="padding:24px">
+      <div class="section-label">🎙️ Voice Recordings &amp; Accent Progress Archive</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:14px">
+        Listen back to your earlier recordings to witness your fluency, vocabulary, and articulation progress over the 90 days.
+      </p>
+
+      <div class="audio-archive-list">
+        ${renderVoiceArchiveList(state)}
+      </div>
+    </div>
+  `;
+}
+
+function renderVoiceArchiveList(state) {
+  const completed = Object.entries(state.completedDays || {})
+    .filter(([_, d]) => d.voiceUrl || d.voiceRecorded)
+    .sort((a, b) => Number(b[0]) - Number(a[0]));
+
+  if (completed.length === 0) {
+    return `
+      <div style="padding:24px;text-align:center;background:rgba(255,255,255,0.02);border-radius:var(--radius-sm)">
+        <p style="color:var(--text-muted);font-size:13px">No voice recordings logged yet. Complete today's Block 4 English Voice Explanation to start your audio archive!</p>
+      </div>
+    `;
+  }
+
+  return completed.map(([dayNum, log]) => {
+    const rd = getRoadmapDay(Number(dayNum));
+    return `
+      <div class="audio-archive-item">
+        <div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">
+            Day ${dayNum}: ${rd?.title || log.dayTitle || 'Daily Mission'}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px">
+            ${new Date(log.completedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • English Explanation Logged
+          </div>
+        </div>
+        <div>
+          ${log.voiceUrl ? `
+            <a href="${log.voiceUrl}" target="_blank" class="btn btn-secondary btn-sm" style="gap:6px">
+              ${ICONS.volume} Listen Cloud Audio
+            </a>
+          ` : `
+            <span class="badge badge-green">${ICONS.check} Recorded Locally</span>
+          `}
         </div>
       </div>
     `;
