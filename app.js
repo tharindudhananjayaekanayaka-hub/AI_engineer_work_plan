@@ -6,8 +6,9 @@
 'use strict';
 
 // ─── CONSTANTS & SECURITY ─────────────────────────────────────
-const APP_VERSION = '1.0.0';
-const STATE_KEY   = 'aie_cmd_state_v1';
+const APP_VERSION = '2.0.0';
+const STATE_KEY   = 'aie_cmd_state_v2';
+const SCHEMA_VERSION = 2;
 const CREDS_KEY   = 'aie_cmd_creds_v1';
 const AUTH_KEY    = 'aie_auth_session_v1';
 
@@ -78,6 +79,13 @@ const STREAK_LEVELS = [
   { days: 90, color: '#00ff96', emoji: '👑' }
 ];
 
+const DAY_MODES = {
+  deep:        { label: '🔥 Deep Day',        minHours: 8,    xpMultiplier: 1.0,  color: '#ef4444', minVoiceSec: 180, noteMinChars: 300, requiresRecall: true,  requiresBuild: true },
+  standard:    { label: '🟢 Standard Day',     minHours: 5,    xpMultiplier: 0.8,  color: '#10b981', minVoiceSec: 120, noteMinChars: 200, requiresRecall: true,  requiresBuild: true },
+  university:  { label: '🟡 University Day',   minHours: 2,    xpMultiplier: 0.5,  color: '#f59e0b', minVoiceSec: 60,  noteMinChars: 100, requiresRecall: true,  requiresBuild: false },
+  maintenance: { label: '🔵 Maintenance Day',  minHours: 0.75, xpMultiplier: 0.25, color: '#60a5fa', minVoiceSec: 60,  noteMinChars: 50,  requiresRecall: true,  requiresBuild: false }
+};
+
 const MORNING_MOTIVATIONS = [
   "ඔයා code කරනකොට ලෝකයේ 99% දෙනා sleep scroll කරනවා. Let that gap widen.",
   "Day {day} is not a number — it's evidence. Build the evidence.",
@@ -95,28 +103,121 @@ const MORNING_MOTIVATIONS = [
 
 function defaultState() {
   return {
+    schemaVersion: SCHEMA_VERSION,
     version: APP_VERSION,
+    userId: null,
+    name: '',
     startDate: null,
-    currentDay: 1,
-    completedDays: {},   // { dayNum: { completedAt, hours, type:'full'|'maintenance' } }
+
+    // V2: Mission Day is separate from calendar day
+    missionDay: 1,        // advances only after verified completion
+    currentDay: 1,        // alias kept for backward compat
+    targetMode: 'standard', // default workload mode
+
+    completedDays: {},    // { missionDay: { completedAt, hours, mode, xpAwarded, evidenceScore } }
+    dailyDrafts: {},      // { missionDay: { ...daily log draft, autosaved } }
+    focusSessions: [],    // [ { category, plannedMinutes, actualMinutes, completed, outputEvidence, focusRating, distractionCount, startedAt, endedAt } ]
+
+    // Recall V2
+    recallItems: {},      // { conceptId: { lastReviewed, nextReview, interval, ease, attempts, correctCount, confidenceHistory } }
+    recallHistory: [],    // legacy compat
+    weakTopics: [],       // [ { concept, sourceMissionDay, confidence, failureCount, lastAttempted, nextRemediation, activity } ]
+
+    // Mastery
+    mastery: {},          // { conceptId: 'not_attempted'|'familiar'|'can_explain'|'can_implement'|'can_debug'|'can_apply' }
+
+    // XP & Skills
+    skillXP: { engineering: 0, ml: 0, llm: 0, agents: 0, production: 0 },
+    knowledgeNodes: [],
+    sparkIdeas: [],
+    weeklyReviews: {},
+    monthlyMilestones: {},
+
+    // Competency metrics (V2)
+    metrics: {
+      verifiedDeepWorkMinutes: 0,
+      independentSolveAttempts: 0,
+      independentSolves: 0,
+      recallCorrect: 0,
+      recallTotal: 0,
+      featuresShipped: 0,
+      testsPassed: 0,
+      testsFailed: 0,
+      commits: 0,
+      deployments: 0,
+      aiAssistanceTotal: 0,
+      aiAssistanceCount: 0
+    },
+
+    // Consistency (V2)
+    consistency: {
+      plannedSessions: 0,
+      completedSessions: 0,
+      currentStreak: 0,
+      longestStreak: 0
+    },
+
+    // Legacy compat
     streak: 0,
     longestStreak: 0,
     totalHours: 0,
-    skillXP: { engineering: 0, ml: 0, llm: 0, agents: 0, production: 0 },
-    knowledgeNodes: [],  // for graph
-    weakTopics: [],
-    recallHistory: [],
-    sparkIdeas: [],
-    weeklyReviews: {},
-    monthlyMilestones: {}
+
+    // Sync
+    sync: {
+      pendingActions: [],
+      lastSyncedAt: null,
+      version: 0
+    }
   };
+}
+
+function migrateState(state) {
+  if (!state) return defaultState();
+
+  // V1 → V2 migration
+  if (!state.schemaVersion || state.schemaVersion < 2) {
+    console.log('[V2 Migration] Migrating state from V1 to V2...');
+    const v1 = state;
+    const v2 = defaultState();
+
+    // Preserve all V1 data
+    v2.name        = v1.name || '';
+    v2.startDate   = v1.startDate || null;
+    v2.missionDay  = v1.currentDay || 1;
+    v2.currentDay  = v1.currentDay || 1;
+    v2.completedDays = v1.completedDays || {};
+    v2.skillXP     = v1.skillXP || v2.skillXP;
+    v2.knowledgeNodes = v1.knowledgeNodes || [];
+    v2.weakTopics  = v1.weakTopics || [];
+    v2.recallHistory = v1.recallHistory || [];
+    v2.sparkIdeas  = v1.sparkIdeas || [];
+    v2.weeklyReviews = v1.weeklyReviews || {};
+    v2.monthlyMilestones = v1.monthlyMilestones || {};
+    v2.streak      = v1.streak || 0;
+    v2.longestStreak = v1.longestStreak || 0;
+    v2.totalHours  = v1.totalHours || 0;
+    v2.consistency.currentStreak = v1.streak || 0;
+    v2.consistency.longestStreak = v1.longestStreak || 0;
+
+    console.log('[V2 Migration] Complete. Mission Day:', v2.missionDay);
+    return v2;
+  }
+
+  // Ensure all new fields exist (forward compat)
+  return { ...defaultState(), ...state };
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STATE_KEY);
+    // Try V2 key first
+    let raw = localStorage.getItem(STATE_KEY);
+    if (!raw) {
+      // Try V1 key for migration
+      raw = localStorage.getItem('aie_cmd_state_v1');
+    }
     if (!raw) return defaultState();
-    return { ...defaultState(), ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    return migrateState(parsed);
   } catch (e) {
     console.warn('State load error:', e);
     return defaultState();
@@ -129,6 +230,111 @@ function saveState(state) {
   } catch (e) {
     showToast('⚠️ Local storage save failed', 'error');
   }
+}
+
+// V2: Dynamic completion requirements based on day mode
+function getCompletionRequirements(mode, roadmapDay) {
+  const m = DAY_MODES[mode] || DAY_MODES.standard;
+  const isReviewDay = roadmapDay && roadmapDay.isReviewDay;
+  return {
+    minHours:       m.minHours,
+    minVoiceSec:    m.minVoiceSec,
+    noteMinChars:   m.noteMinChars,
+    requiresRecall: m.requiresRecall,
+    requiresBuild:  m.requiresBuild && !isReviewDay,
+    requiresReflection: mode !== 'maintenance',
+    minReflectionChars: mode === 'deep' ? 100 : 50,
+    mode
+  };
+}
+
+// V2: Pure completion validator — returns { passed, checks, score, missingCount }
+function validateDayCompletion(log, requirements) {
+  if (!log || !requirements) return { passed: false, checks: [], score: 0, missingCount: 1 };
+
+  const checks = [];
+
+  // Hours check
+  const hours = parseFloat(log.hours || log.studyHours || 0);
+  const hoursPassed = hours >= requirements.minHours;
+  checks.push({
+    key: 'hours',
+    label: `Focused hours: ${hours.toFixed(1)}h / ${requirements.minHours}h required`,
+    passed: hoursPassed
+  });
+
+  // Notes check
+  const noteLen = (log.studyNotes || log.notes || '').trim().length;
+  const notesPassed = noteLen >= requirements.noteMinChars;
+  checks.push({
+    key: 'notes',
+    label: `Study notes: ${noteLen} chars / ${requirements.noteMinChars} required`,
+    passed: notesPassed
+  });
+
+  // Voice check
+  const voiceSec = parseInt(log.voiceDuration || log.voiceSeconds || 0);
+  const voicePassed = voiceSec >= requirements.minVoiceSec || !!(log.voiceUrl || log.voiceRecorded);
+  checks.push({
+    key: 'voice',
+    label: `Voice explanation: ${Math.floor(voiceSec/60)}:${String(voiceSec%60).padStart(2,'0')} / ${Math.floor(requirements.minVoiceSec/60)}:00 required`,
+    passed: voicePassed
+  });
+
+  // Recall check
+  if (requirements.requiresRecall) {
+    const recallDone = !!(log.recallDone || log.recallCompleted);
+    checks.push({
+      key: 'recall',
+      label: 'Daily recall: ' + (recallDone ? 'completed' : 'not completed'),
+      passed: recallDone
+    });
+  }
+
+  // Build check
+  if (requirements.requiresBuild) {
+    const buildDone = !!(log.githubCommit || log.buildEvidence || log.commitLink);
+    checks.push({
+      key: 'build',
+      label: 'Build evidence / GitHub commit: ' + (buildDone ? 'present' : 'missing'),
+      passed: buildDone
+    });
+  }
+
+  // Reflection check
+  if (requirements.requiresReflection) {
+    const reflLen = (log.reflection || log.reflectionText || '').trim().length;
+    const reflPassed = reflLen >= requirements.minReflectionChars;
+    checks.push({
+      key: 'reflection',
+      label: `Reflection: ${reflLen} chars / ${requirements.minReflectionChars} required`,
+      passed: reflPassed
+    });
+  }
+
+  const passed = checks.every(c => c.passed);
+  const score = Math.round((checks.filter(c => c.passed).length / checks.length) * 100);
+  const missingCount = checks.filter(c => !c.passed).length;
+
+  return { passed, checks, score, missingCount };
+}
+
+// V2: Evidence-based XP calculation
+function calculateDayXP(roadmapDay, log, mode) {
+  if (!roadmapDay) return { engineering: 0, ml: 0, llm: 0, agents: 0, production: 0 };
+  const modeData = DAY_MODES[mode] || DAY_MODES.standard;
+  const baseXP = roadmapDay.xpRewards || { engineering: 10, ml: 0, llm: 0, agents: 0, production: 5 };
+
+  // Evidence score 0-1 based on completion quality
+  const reqs = getCompletionRequirements(mode, roadmapDay);
+  const validation = validateDayCompletion(log, reqs);
+  const evidenceScore = validation.score / 100;
+
+  const result = {};
+  for (const skill of SKILL_KEYS) {
+    result[skill] = Math.round((baseXP[skill] || 0) * modeData.xpMultiplier * evidenceScore);
+  }
+  return result;
 }
 
 function loadCreds() {
@@ -1466,6 +1672,10 @@ function buildAppShell(state) {
           <div class="sync-dot" id="syncDot"></div>
           <span id="syncText">Ready</span>
         </div>
+        <div class="streak-display" style="margin-right: 8px;">
+          <span class="streak-flame">${ICONS.calendar}</span>
+          <span style="font-size:12px; font-weight: 600;">Mission ${state.missionDay || state.currentDay} • Cal Day ${state.startDate ? Math.floor((Date.now() - new Date(state.startDate)) / 86400000) + 1 : state.currentDay}</span>
+        </div>
         <div class="streak-display">
           <span class="streak-flame">${ICONS.flame}</span>
           <span id="streakCount">${state.streak || 0}</span>
@@ -1829,11 +2039,32 @@ window.toggleBlock = function(id) {
   if (el) el.classList.toggle('expanded');
 };
 
+window.hexToRgb = function(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)}` : '0,0,0';
+};
+
+window.setDayMode = function(mode) {
+  if (!DAY_MODES[mode]) return;
+  window.appState = window.appState || {};
+  window.appState.targetMode = mode;
+  saveState(window.appState);
+  // Re-render current day
+  if (typeof renderCurrentDay === 'function') renderCurrentDay();
+  else if (typeof showPage === 'function') showPage('roadmap');
+  showToast(`${DAY_MODES[mode].label} activated`, 'success');
+};
+
 function renderDayBlocks(dayNum, roadmapDay, state) {
   const topics = (roadmapDay?.topics || []).map(t => `<li class="sq-item"><span class="sq-bullet">▸</span>${t}</li>`).join('');
   const studyQs = (roadmapDay?.studyQuestions || roadmapDay?.reviewQuestions || [])
     .map((q,i) => `<li class="sq-item"><span class="sq-bullet">${i+1}.</span>${q}</li>`).join('');
   const eng = getEnglishDayData(dayNum, roadmapDay);
+
+  const currentLog = state.dailyDrafts && state.dailyDrafts[dayNum] ? state.dailyDrafts[dayNum] : (state.completedDays && state.completedDays[dayNum] ? state.completedDays[dayNum] : {});
+  const currentMode = (state.targetMode) || 'standard';
+  const reqs = getCompletionRequirements(currentMode, roadmapDay);
+  const validation = validateDayCompletion(currentLog, reqs);
 
   return `
   <div class="dashboard-grid fade-in" style="margin-bottom:24px">
@@ -2016,24 +2247,34 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
 
       </div><!-- end blocks-grid -->
 
-      <!-- Lock Checklist -->
-      <div class="lock-checklist" style="margin-top:20px">
-        <div class="sq-title">🔒 Day Completion Lock</div>
-        ${LOCK_ITEMS.map(item => `
-          <div class="lock-item" id="lock-${item.id}">
-            <span class="lock-icon">⬜</span>
-            <span>${item.label}</span>
+      <!-- Lock Checklist / Completion Evidence -->
+      <div class="completion-evidence" style="margin-top:20px;background:rgba(255,255,255,0.02);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.05)">
+        <div class="sq-title">🔒 Day Completion Evidence</div>
+        ${validation.checks.map(c => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px">
+            <span style="color:${c.passed ? '#10b981' : '#ef4444'};flex-shrink:0">${c.passed ? '✅' : '❌'}</span>
+            <span style="color:${c.passed ? 'var(--text-secondary)' : 'var(--text-muted)'}">${c.label}</span>
           </div>
         `).join('')}
+        <div style="margin-top:8px;padding:8px;background:rgba(${validation.passed ? '16,185,129' : '239,68,68'},0.1);border-radius:6px;font-size:12px;color:${validation.passed ? '#10b981' : '#ef4444'}">
+          Evidence Score: ${validation.score}% ${validation.passed ? '— Ready to complete! 🎯' : `— ${validation.missingCount} item(s) missing`}
+        </div>
       </div>
 
-      <button class="btn" id="completeDay" disabled>🔒 Complete All Blocks to Unlock</button>
+      <button class="btn" id="completeDay" ${validation.passed ? '' : 'disabled'}>${validation.passed ? '🚀 Complete Mission Day' : '🔒 Fulfill Evidence to Unlock'}</button>
 
-      <!-- Maintenance Mode -->
-      <div style="margin-top:12px;text-align:center">
-        <button class="btn btn-secondary btn-sm" onclick="toggleMaintenanceMode()">🟡 Switch to Maintenance Mode</button>
-        <div class="form-hint" style="text-align:center;margin-top:6px">
-          University/work day? Min 45m study + recall. Honest 🟡 marker.
+      <!-- Mode Selector -->
+      <div class="mode-selector" style="margin-top:16px">
+        <div class="section-label">📋 Today's Workload Mode</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">
+          ${Object.entries(DAY_MODES).map(([key, m]) => `
+            <button onclick="setDayMode('${key}')" 
+              class="mode-btn ${currentMode === key ? 'active' : ''}" 
+              style="padding:10px 8px;border-radius:8px;border:1px solid ${currentMode === key ? m.color : 'rgba(255,255,255,0.08)'};background:${currentMode === key ? 'rgba('+hexToRgb(m.color)+',0.15)' : 'transparent'};color:${currentMode === key ? m.color : 'var(--text-muted)'};cursor:pointer;font-size:12px;font-weight:500;text-align:left">
+              ${m.label}<br>
+              <span style="font-size:10px;opacity:0.7">${m.minHours}h+ • ${Math.round(m.xpMultiplier*100)}% XP</span>
+            </button>
+          `).join('')}
         </div>
       </div>
     </div>
@@ -2365,6 +2606,94 @@ function renderQuickRecall(state) {
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${items.length} recall items due today</div>
   `;
+}
+
+// V2: Canonical recall processing — one source of truth
+function processRecallResult(conceptId, confidence, state) {
+  // confidence: 1=blank, 2=partial, 3=good, 4=perfect
+  if (!conceptId || !state) return;
+
+  const now = new Date();
+  const baseIntervals = [1, 3, 7, 14, 30, 60, 90];
+
+  // Get or create recall item
+  if (!state.recallItems) state.recallItems = {};
+  const item = state.recallItems[conceptId] || {
+    conceptId,
+    lastReviewed: null,
+    nextReview: null,
+    interval: 1,
+    ease: 2.5,
+    attempts: 0,
+    correctCount: 0,
+    confidenceHistory: []
+  };
+
+  // Update history
+  item.attempts++;
+  item.confidenceHistory.push({ date: now.toISOString(), confidence });
+  if (item.confidenceHistory.length > 20) item.confidenceHistory.shift();
+
+  // Update ease factor (SuperMemo-style)
+  item.ease = Math.max(1.3, item.ease + (0.1 - (4 - confidence) * (0.08 + (4 - confidence) * 0.02)));
+
+  // Calculate next interval
+  let nextInterval;
+  if (confidence === 1) {
+    nextInterval = 1; // review tomorrow
+    item.interval = 1;
+  } else if (confidence === 2) {
+    nextInterval = Math.max(1, Math.round(item.interval * 0.5));
+    item.interval = nextInterval;
+  } else if (confidence === 3) {
+    nextInterval = item.attempts === 1 ? 3 : Math.round(item.interval * item.ease);
+    item.interval = nextInterval;
+    item.correctCount++;
+  } else { // 4 = perfect
+    nextInterval = item.attempts === 1 ? 7 : Math.round(item.interval * item.ease * 1.2);
+    item.interval = nextInterval;
+    item.correctCount++;
+  }
+
+  item.lastReviewed = now.toISOString();
+  const nextDate = new Date(now);
+  nextDate.setDate(nextDate.getDate() + nextInterval);
+  item.nextReview = nextDate.toISOString();
+
+  // Save back
+  state.recallItems[conceptId] = item;
+
+  // Update global metrics
+  if (!state.metrics) state.metrics = {};
+  state.metrics.recallTotal = (state.metrics.recallTotal || 0) + 1;
+  if (confidence >= 3) state.metrics.recallCorrect = (state.metrics.recallCorrect || 0) + 1;
+
+  // Update weak topics
+  if (confidence <= 2) {
+    if (!state.weakTopics) state.weakTopics = [];
+    const existing = state.weakTopics.find(w => w.concept === conceptId);
+    if (existing) {
+      existing.failureCount = (existing.failureCount || 0) + 1;
+      existing.lastAttempted = now.toISOString();
+      existing.confidence = confidence;
+    } else {
+      state.weakTopics.push({
+        concept: conceptId,
+        confidence,
+        failureCount: 1,
+        lastAttempted: now.toISOString(),
+        nextRemediation: item.nextReview,
+        activity: confidence === 1 ? 'closed-book explanation' : 'tiny implementation'
+      });
+    }
+  } else {
+    // Remove from weak topics if mastered
+    if (state.weakTopics) {
+      state.weakTopics = state.weakTopics.filter(w => w.concept !== conceptId);
+    }
+  }
+
+  return item;
 }
 
 window.quickRecallAnswer = function(confidence, itemId) {
