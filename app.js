@@ -53,7 +53,8 @@ const ICONS = {
   mic: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
   copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
   volume: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
-  book: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
+  book: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  analytics: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`
 };
 
 const ENGINEER_TITLES = [
@@ -83,8 +84,18 @@ const DAY_MODES = {
   deep:        { label: '🔥 Deep Day',        minHours: 8,    xpMultiplier: 1.0,  color: '#ef4444', minVoiceSec: 180, noteMinChars: 300, requiresRecall: true,  requiresBuild: true },
   standard:    { label: '🟢 Standard Day',     minHours: 5,    xpMultiplier: 0.8,  color: '#10b981', minVoiceSec: 120, noteMinChars: 200, requiresRecall: true,  requiresBuild: true },
   university:  { label: '🟡 University Day',   minHours: 2,    xpMultiplier: 0.5,  color: '#f59e0b', minVoiceSec: 60,  noteMinChars: 100, requiresRecall: true,  requiresBuild: false },
-  maintenance: { label: '🔵 Maintenance Day',  minHours: 0.75, xpMultiplier: 0.25, color: '#60a5fa', minVoiceSec: 60,  noteMinChars: 50,  requiresRecall: true,  requiresBuild: false }
+  maintenance: { label: '🔵 Maintenance Day',  minHours: 0.75, xpMultiplier: 0.25, color: '#60a5fa', minVoiceSec: 60,  noteMinChars: 50,  requiresRecall: true,  requiresBuild: false },
+  recovery:    { label: '🌿 Recovery Day',     minHours: 0.5,  xpMultiplier: 0.1,  color: '#34d399', minVoiceSec: 0,   noteMinChars: 30,  requiresRecall: true,  requiresBuild: false }
 };
+
+const MASTERY_LEVELS = [
+  { key: 'not_attempted', label: 'Not Attempted', icon: '⬜', color: '#475569', order: 0 },
+  { key: 'familiar',      label: 'Familiar',      icon: '🔵', color: '#60a5fa', order: 1 },
+  { key: 'can_explain',   label: 'Can Explain',   icon: '🟡', color: '#f59e0b', order: 2 },
+  { key: 'can_implement', label: 'Can Implement', icon: '🟠', color: '#f97316', order: 3 },
+  { key: 'can_debug',     label: 'Can Debug',     icon: '🔴', color: '#ef4444', order: 4 },
+  { key: 'can_apply',     label: 'Mastered ✦',    icon: '🟢', color: '#10b981', order: 5 }
+];
 
 const MORNING_MOTIVATIONS = [
   "ඔයා code කරනකොට ලෝකයේ 99% දෙනා sleep scroll කරනවා. Let that gap widen.",
@@ -1323,11 +1334,12 @@ function showPage(pageId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Page-specific init
-  if (pageId === 'graph')    buildKnowledgeGraph(window.appState || defaultState());
-  if (pageId === 'recall')   renderRecallPage();
-  if (pageId === 'roadmap')  renderRoadmapPage();
-  if (pageId === 'english')  renderEnglishPage();
-  if (pageId === 'settings') renderSettingsPage();
+  if (pageId === 'graph')     buildKnowledgeGraph(window.appState || defaultState());
+  if (pageId === 'recall')    renderRecallPage();
+  if (pageId === 'roadmap')   renderRoadmapPage();
+  if (pageId === 'english')   renderEnglishPage();
+  if (pageId === 'analytics') renderAnalyticsPage();
+  if (pageId === 'settings')  renderSettingsPage();
 }
 
 // ─── LOGIN & SECURITY SCREEN ───────────────────────────────────
@@ -1650,6 +1662,9 @@ function buildAppShell(state) {
   const sLevel = getStreakLevel(state.streak || 0);
   const completedCount = Object.keys(state.completedDays || {}).length;
   const progress = Math.round((completedCount / 90) * 100);
+  const consistencyRate = (state.consistency?.plannedSessions > 0)
+    ? Math.round((state.consistency.completedSessions / state.consistency.plannedSessions) * 100)
+    : (state.streak > 0 ? 100 : 0);
 
   return `
     <div id="topbar">
@@ -1662,6 +1677,7 @@ function buildAppShell(state) {
         <button class="nav-btn active" data-page="dashboard">${ICONS.dashboard}<span>Dashboard</span></button>
         <button class="nav-btn" data-page="roadmap">${ICONS.roadmap}<span>Roadmap</span></button>
         <button class="nav-btn" data-page="english">${ICONS.mic}<span>English Hub</span></button>
+        <button class="nav-btn" data-page="analytics">${ICONS.analytics}<span>Analytics</span></button>
         <button class="nav-btn" data-page="recall">${ICONS.recall}<span>Recall</span></button>
         <button class="nav-btn" data-page="graph">${ICONS.graph}<span>Knowledge</span></button>
         <button class="nav-btn" data-page="settings">${ICONS.settings}<span>Settings</span></button>
@@ -1675,6 +1691,11 @@ function buildAppShell(state) {
         <div class="streak-display" style="margin-right: 8px;">
           <span class="streak-flame">${ICONS.calendar}</span>
           <span style="font-size:12px; font-weight: 600;">Mission ${state.missionDay || state.currentDay} • Cal Day ${state.startDate ? Math.floor((Date.now() - new Date(state.startDate)) / 86400000) + 1 : state.currentDay}</span>
+        </div>
+        <div class="streak-display" title="Consistency Rate" style="margin-right: 8px;">
+          <span class="streak-flame">📈</span>
+          <span style="font-size:12px; font-weight: 600;">${consistencyRate}%</span>
+          <span style="font-size:10px;opacity:0.7">rate</span>
         </div>
         <div class="streak-display">
           <span class="streak-flame">${ICONS.flame}</span>
@@ -1699,6 +1720,10 @@ function buildAppShell(state) {
         ${ICONS.mic}
         <span>English</span>
       </button>
+      <button class="mobile-nav-btn" data-page="analytics">
+        ${ICONS.analytics}
+        <span>Analytics</span>
+      </button>
       <button class="mobile-nav-btn" data-page="recall">
         ${ICONS.recall}
         <span>Recall</span>
@@ -1718,6 +1743,9 @@ function buildAppShell(state) {
     </div>
     <div id="page-english" class="page">
       <div class="container" id="englishContent"></div>
+    </div>
+    <div id="page-analytics" class="page">
+      <div class="container" id="analyticsContent"></div>
     </div>
     <div id="page-recall" class="page">
       <div class="container" id="recallContent"></div>
@@ -2305,6 +2333,149 @@ window.saveEnglishCorrections = function() {
   saveState(window.appState);
 };
 
+// V2: Mastery Checkpoint
+window.setMasteryLevel = function(conceptId, level) {
+  if (!window.appState) return;
+  if (!window.appState.mastery) window.appState.mastery = {};
+  window.appState.mastery[conceptId] = level;
+
+  // Update draft
+  const dayNum = window.appState.missionDay || window.appState.currentDay;
+  if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+  if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+  window.appState.dailyDrafts[dayNum].masteryLevel = level;
+
+  saveState(window.appState);
+
+  // Update button visuals
+  const levelData = MASTERY_LEVELS.find(m => m.key === level);
+  MASTERY_LEVELS.forEach(m => {
+    const btn = document.getElementById('mastery-' + m.key);
+    if (btn) {
+      const active = m.key === level;
+      btn.style.background = active ? `rgba(${hexToRgb(m.color)},0.2)` : 'transparent';
+      btn.style.borderColor = active ? m.color : 'rgba(255,255,255,0.08)';
+      btn.style.color = active ? m.color : 'var(--text-muted)';
+    }
+  });
+
+  const hint = document.getElementById('masteryHint');
+  if (hint && levelData) {
+    const hints = {
+      not_attempted: 'You have not started this topic yet.',
+      familiar: 'You recognize the concept but cannot implement it yet.',
+      can_explain: 'You can explain it in plain English to someone else.',
+      can_implement: 'You can write working code from scratch without help.',
+      can_debug: 'You can find and fix bugs in broken implementations.',
+      can_apply: 'You can apply it independently to new, unfamiliar problems.'
+    };
+    hint.innerHTML = `${levelData.icon} <strong style="color:${levelData.color}">${levelData.label}:</strong> ${hints[level]}`;
+  }
+
+  showToast(`Mastery updated: ${levelData?.label || level}`, 'success');
+};
+
+// V2: Weekly Operating System
+window._weeklyAnswers = {};
+
+window.saveWeeklyAnswer = function(index, value) {
+  window._weeklyAnswers[index] = value;
+};
+
+window.saveWeeklyReview = function() {
+  if (!window.appState) return;
+  const weekNum = Math.ceil((window.appState.missionDay || 1) / 7);
+  if (!window.appState.weeklyReviews) window.appState.weeklyReviews = {};
+  window.appState.weeklyReviews[weekNum] = {
+    savedAt: new Date().toISOString(),
+    missionDay: window.appState.missionDay || 1,
+    answers: { ...window._weeklyAnswers },
+    metrics: { ...window.appState.metrics }
+  };
+  saveState(window.appState);
+  showToast('✅ Weekly review saved!', 'success');
+};
+
+// V2: Interview Answer Bank
+window.saveInterviewAnswer = function(id, value) {
+  if (!window.appState) return;
+  if (!window.appState.interviewStories) window.appState.interviewStories = {};
+  window.appState.interviewStories[id] = { text: value, updatedAt: new Date().toISOString() };
+  saveState(window.appState);
+};
+
+window.loadInterviewAnswers = function() {
+  if (!window.appState || !window.appState.interviewStories) return;
+  Object.entries(window.appState.interviewStories).forEach(([id, data]) => {
+    const el = document.getElementById('interview-' + id);
+    if (el && data.text) el.value = data.text;
+  });
+  showToast('Answers loaded!', 'success');
+};
+
+// V2: Experiment & Bug Evidence
+window.saveTestEvidence = function() {
+  if (!window.appState) return;
+  const written = parseInt(document.getElementById('testsWritten')?.value || 0);
+  const passed  = parseInt(document.getElementById('testsPassed')?.value || 0);
+  const failed  = Math.max(0, written - passed);
+
+  if (!window.appState.metrics) window.appState.metrics = {};
+  window.appState.metrics.testsPassed = (window.appState.metrics.testsPassed || 0) + passed;
+  window.appState.metrics.testsFailed = (window.appState.metrics.testsFailed || 0) + failed;
+
+  const dayNum = window.appState.missionDay || window.appState.currentDay;
+  if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+  if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+  window.appState.dailyDrafts[dayNum].testsWritten = written;
+  window.appState.dailyDrafts[dayNum].testsPassed = passed;
+
+  saveState(window.appState);
+};
+
+window.setFeatureShipped = function(shipped) {
+  if (!window.appState) return;
+  if (!window.appState.metrics) window.appState.metrics = {};
+  if (shipped) window.appState.metrics.featuresShipped = (window.appState.metrics.featuresShipped || 0) + 1;
+
+  const dayNum = window.appState.missionDay || window.appState.currentDay;
+  if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+  if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+  window.appState.dailyDrafts[dayNum].featureShipped = shipped;
+
+  const yes = document.getElementById('featYes');
+  const no  = document.getElementById('featNo');
+  if (yes) { yes.style.background = shipped ? 'rgba(16,185,129,0.15)' : 'transparent'; yes.style.borderColor = shipped ? '#10b981' : 'rgba(255,255,255,0.08)'; yes.style.color = shipped ? '#10b981' : 'var(--text-muted)'; }
+  if (no)  { no.style.background  = !shipped ? 'rgba(239,68,68,0.1)' : 'transparent'; no.style.borderColor  = !shipped ? '#ef4444' : 'rgba(255,255,255,0.08)'; no.style.color  = !shipped ? '#ef4444' : 'var(--text-muted)'; }
+
+  saveState(window.appState);
+  showToast(shipped ? '🚀 Feature shipped! +1 to portfolio.' : '🔧 Logged — keep building!', 'success');
+};
+
+// V2: Comeback Flow
+window.showComebackFlow = function() {
+  if (!window.appState) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const missionDay = window.appState.missionDay || 1;
+  overlay.innerHTML = `
+    <div style="background:#0C1017;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:28px;max-width:400px;width:90%;text-align:center">
+      <div style="font-size:28px;margin-bottom:12px">🌿</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">Welcome Back!</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Mission Day ${missionDay} is still waiting. Your progress is safe.</div>
+      <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px;margin-bottom:16px;text-align:left">
+        <div style="font-size:12px;color:#10b981;font-weight:600;margin-bottom:8px">Comeback Options:</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="window.setDayMode('maintenance');document.body.removeChild(this.closest('[style*=fixed]'))" style="padding:8px;border-radius:6px;border:1px solid #60a5fa;background:rgba(96,165,250,0.1);color:#60a5fa;cursor:pointer;font-size:12px">🔵 Maintenance Day — 45-90min quick review</button>
+          <button onclick="window.setDayMode('standard');document.body.removeChild(this.closest('[style*=fixed]'))" style="padding:8px;border-radius:6px;border:1px solid #10b981;background:rgba(16,185,129,0.1);color:#10b981;cursor:pointer;font-size:12px">🟢 Standard Day — Resume normally</button>
+          <button onclick="window.setDayMode('recovery');document.body.removeChild(this.closest('[style*=fixed]'))" style="padding:8px;border-radius:6px;border:1px solid #34d399;background:rgba(52,211,153,0.1);color:#34d399;cursor:pointer;font-size:12px">🌿 Recovery Day — Light recall only</button>
+        </div>
+      </div>
+      <button onclick="document.body.removeChild(this.closest('[style*=fixed]'))" style="padding:8px 20px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px">Close</button>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
 function renderDayBlocks(dayNum, roadmapDay, state) {
   const topics = (roadmapDay?.topics || []).map(t => `<li class="sq-item"><span class="sq-bullet">▸</span>${t}</li>`).join('');
   const studyQs = (roadmapDay?.studyQuestions || roadmapDay?.reviewQuestions || [])
@@ -2350,6 +2521,23 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
               <textarea class="notes-area" id="studyNotes" placeholder="Write your understanding here... explain concepts in your own words, include code examples, draw diagrams in ASCII, note what confused you..."></textarea>
               <div class="form-hint"><span id="notesCharCount">0</span> chars (need 100+)</div>
             </div>
+            <!-- V2: Mastery Checkpoint -->
+            <div style="margin-top:12px;margin-bottom:12px">
+              <div class="section-label" style="margin-bottom:8px">🎯 Mastery Self-Assessment</div>
+              <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Where are you for today's core topic?</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px" id="masterySelector">
+                  ${MASTERY_LEVELS.map(m => `
+                    <button onclick="setMasteryLevel('day${dayNum}', '${m.key}')" 
+                      id="mastery-${m.key}"
+                      style="padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px">
+                      ${m.icon} ${m.label}
+                    </button>
+                  `).join('')}
+                </div>
+                <div id="masteryHint" style="margin-top:8px;font-size:11px;color:var(--text-muted)">Select your current mastery level for this day's material</div>
+              </div>
+            </div>
             <button class="btn btn-secondary btn-sm" onclick="markBlock1Done()">✅ Mark Study Block Complete</button>
           </div>
         </div>
@@ -2394,6 +2582,33 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
                 </div>
               </div>
               <div id="sessionLog" style="margin-top:8px;font-size:11px;color:var(--text-muted)"></div>
+            </div>
+            <!-- V2: Experiment & Bug Evidence -->
+            <div class="form-group" style="margin-top:16px">
+              <div class="section-label" style="margin-bottom:8px">🧪 Experiment / Bug Post-Mortem Log</div>
+              <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                  <div>
+                    <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Tests Written</label>
+                    <input type="number" id="testsWritten" min="0" value="0" onchange="window.saveTestEvidence()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.3);color:var(--text-primary);font-size:13px">
+                  </div>
+                  <div>
+                    <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Tests Passed</label>
+                    <input type="number" id="testsPassed" min="0" value="0" onchange="window.saveTestEvidence()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.3);color:var(--text-primary);font-size:13px">
+                  </div>
+                </div>
+                <div style="margin-bottom:8px">
+                  <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Feature Shipped Today?</label>
+                  <div style="display:flex;gap:8px">
+                    <button onclick="window.setFeatureShipped(true)" id="featYes" style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px">🚀 Yes, shipped!</button>
+                    <button onclick="window.setFeatureShipped(false)" id="featNo" style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px">🔧 Still building</button>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Bug Post-Mortem (if applicable)</label>
+                  <textarea id="bugPostMortem" class="notes-area" style="height:60px;font-size:11px" placeholder="Symptom → Root Cause → Fix → Prevention..."></textarea>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3185,6 +3400,196 @@ window.pronounceWord = function(word) {
   } catch (_) {}
 };
 
+// ─── ANALYTICS PAGE (V2 COMPETENCY DASHBOARD) ─────────────────
+
+function renderAnalyticsPage(state) {
+  const container = document.getElementById('analyticsContent');
+  if (!container) return;
+  state = state || window.appState || defaultState();
+
+  const metrics = state.metrics || {};
+  const consistency = state.consistency || {};
+  const completedDays = state.completedDays || {};
+  const completedCount = Object.keys(completedDays).length;
+  const focusSessions = state.focusSessions || [];
+  const verifiedHours = Math.round((metrics.verifiedDeepWorkMinutes || 0) / 60 * 10) / 10;
+  const recallAcc = metrics.recallTotal > 0 ? Math.round((metrics.recallCorrect / metrics.recallTotal) * 100) : 0;
+  const solveRate = metrics.independentSolveAttempts > 0 ? Math.round((metrics.independentSolves / metrics.independentSolveAttempts) * 100) : 0;
+  const avgAILevel = metrics.aiAssistanceCount > 0 ? (metrics.aiAssistanceTotal / metrics.aiAssistanceCount).toFixed(1) : '0.0';
+  const weeklyReviews = state.weeklyReviews || {};
+  const weeklyCount = Object.keys(weeklyReviews).length;
+
+  // Compute consistency rate
+  const consistencyRate = consistency.plannedSessions > 0
+    ? Math.round((consistency.completedSessions / consistency.plannedSessions) * 100)
+    : (state.streak > 0 ? 100 : 0);
+
+  // Skill XP totals
+  const skillXP = state.skillXP || {};
+  const totalXP = Object.values(skillXP).reduce((a,b)=>a+b,0);
+
+  // Mastery distribution
+  const mastery = state.mastery || {};
+  const masteryDist = MASTERY_LEVELS.map(m => ({
+    ...m,
+    count: Object.values(mastery).filter(v => v === m.key).length
+  }));
+  const masteredCount = masteryDist.find(m=>m.key==='can_apply')?.count || 0;
+
+  // Weak topics
+  const weakTopics = (state.weakTopics || []).slice(0, 5);
+
+  // Recent focus sessions
+  const recentSessions = focusSessions.slice(-7);
+
+  container.innerHTML = `
+    <div class="fade-in">
+      <!-- Header -->
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+          <span class="meta-chip green" style="font-size:11px">📊 COMPETENCY ANALYTICS DASHBOARD</span>
+          <span class="meta-chip cyan" style="font-size:11px">V2 EVIDENCE ENGINE</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">Do not reward activity alone. Reward verifiable learning evidence.</div>
+      </div>
+
+      <!-- 8 Core Metrics Grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+        ${[
+          { label: 'Verified Deep Work', value: verifiedHours + 'h', sub: focusSessions.filter(s=>s.completed).length + ' confirmed sessions', color: '#10b981', icon: '⏱️' },
+          { label: 'Days Completed', value: completedCount, sub: 'of 90 mission days', color: '#6366f1', icon: '✅' },
+          { label: 'Recall Accuracy', value: recallAcc + '%', sub: (metrics.recallCorrect||0) + '/' + (metrics.recallTotal||0) + ' correct', color: recallAcc>=70?'#10b981':recallAcc>=50?'#f59e0b':'#ef4444', icon: '🧠' },
+          { label: 'Independent Solve Rate', value: solveRate + '%', sub: (metrics.independentSolves||0) + '/' + (metrics.independentSolveAttempts||0) + ' tasks', color: solveRate>=70?'#10b981':solveRate>=50?'#f59e0b':'#ef4444', icon: '🎯' },
+          { label: 'Features Shipped', value: metrics.featuresShipped || 0, sub: (metrics.commits||0) + ' GitHub commits', color: '#f59e0b', icon: '🚀' },
+          { label: 'Tests Passed', value: metrics.testsPassed || 0, sub: (metrics.testsFailed||0) + ' failed', color: '#a78bfa', icon: '🧪' },
+          { label: 'Mastered Concepts', value: masteredCount, sub: Object.keys(mastery).length + ' assessed total', color: '#00e5ff', icon: '🏆' },
+          { label: 'Consistency Rate', value: consistencyRate + '%', sub: 'Streak: ' + (consistency.currentStreak||state.streak||0) + ' days', color: consistencyRate>=80?'#10b981':consistencyRate>=60?'#f59e0b':'#ef4444', icon: '📈' },
+        ].map(m => `
+          <div class="card" style="padding:16px">
+            <div style="font-size:18px;margin-bottom:8px">${m.icon}</div>
+            <div style="font-size:22px;font-weight:700;color:${m.color};font-family:var(--font-mono);margin-bottom:4px">${m.value}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:2px">${m.label}</div>
+            <div style="font-size:10px;color:var(--text-muted)">${m.sub}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- AI Assistance Trend -->
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:12px">🤖 AI Assistance Profile</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:20px;font-weight:700;font-family:var(--font-mono);color:#6366f1">${avgAILevel}/5.0</div>
+            <div style="font-size:11px;color:var(--text-muted)">Avg AI Level</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Level breakdown (0=No AI → 5=Generated)</div>
+            <div style="display:flex;gap:3px">
+              ${[0,1,2,3,4,5].map(n => {
+                const levelColors = ['#10b981','#60a5fa','#f59e0b','#f97316','#ef4444','#dc2626'];
+                const levelLabels = ['None','Syntax','Hints','Arch','Partial','Full'];
+                return `<div style="flex:1;text-align:center">
+                  <div style="height:6px;border-radius:3px;background:${levelColors[n]};opacity:0.7"></div>
+                  <div style="font-size:9px;color:var(--text-muted);margin-top:2px">${levelLabels[n]}</div>
+                </div>`;
+              }).join('')}
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Goal: keep average ≤ 2.0 (hints only)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mastery Distribution -->
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:12px">🎯 Mastery Level Distribution</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${masteryDist.map(m => `
+            <div style="background:rgba(${hexToRgb(m.color)},0.1);border:1px solid rgba(${hexToRgb(m.color)},0.25);border-radius:8px;padding:10px 14px;text-align:center;min-width:80px">
+              <div style="font-size:20px">${m.icon}</div>
+              <div style="font-size:18px;font-weight:700;color:${m.color}">${m.count}</div>
+              <div style="font-size:10px;color:var(--text-muted)">${m.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Weak Topics Queue -->
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:12px">⚠️ Weak Topics — Remediation Queue</div>
+        ${weakTopics.length > 0 ? weakTopics.map(t => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="color:#ef4444;font-size:12px">●</span>
+            <div style="flex:1">
+              <div style="font-size:12px;color:var(--text-secondary);font-weight:500">${t.concept}</div>
+              <div style="font-size:10px;color:var(--text-muted)">Failed ${t.failureCount||1}x • Confidence: ${t.confidence}/4 • Activity: ${t.activity||'review'}</div>
+            </div>
+            <span class="meta-chip" style="font-size:10px">Day ${t.sourceMissionDay||'?'}</span>
+          </div>
+        `).join('') : `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px">✅ No weak topics queued — great recall accuracy!</div>`}
+      </div>
+
+      <!-- Recent Focus Sessions -->
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:12px">⏱️ Recent Focus Sessions</div>
+        ${recentSessions.length > 0 ? recentSessions.map(s => `
+          <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px">
+            <span style="color:${s.completed?'#10b981':'#64748b'}">${s.completed?'✅':'⬜'}</span>
+            <div style="flex:1">
+              <span style="color:var(--text-secondary)">${s.category} sprint</span>
+              <span style="color:var(--text-muted)"> — ${s.actualMinutes||s.plannedMinutes}min actual / ${s.plannedMinutes}min planned</span>
+            </div>
+            <span style="color:var(--text-muted);font-size:10px">Focus: ${s.focusRating||3}/5</span>
+          </div>
+        `).join('') : `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px">No focus sessions recorded yet. Use sprint timer in Build block!</div>`}
+      </div>
+
+      <!-- Weekly Questions -->
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:12px">🔍 Weekly Operating System — Review Questions</div>
+        ${[
+          'What can I now build that I could not build last week?',
+          'What can I explain without notes?',
+          'What still requires AI / tutorial help?',
+          'What bug taught me the most?',
+          'What evidence can I show an interviewer?',
+          'What should be removed from next week because it is low value?'
+        ].map((q,i) => `
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${i+1}. ${q}</div>
+            <textarea class="notes-area" style="height:40px;font-size:11px" placeholder="Your answer..." onblur="window.saveWeeklyAnswer(${i}, this.value)"></textarea>
+          </div>
+        `).join('')}
+        <button class="btn btn-primary btn-sm" onclick="window.saveWeeklyReview()" style="margin-top:8px">💾 Save Weekly Review</button>
+      </div>
+
+      <!-- XP by Skill -->
+      <div class="card" style="padding:16px">
+        <div class="section-label" style="margin-bottom:12px">⚡ Skill XP Breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${SKILL_KEYS.map((key, i) => {
+            const xp = skillXP[key] || 0;
+            const maxXP = 90 * 25;
+            const pct = Math.min(100, Math.round((xp / maxXP) * 100));
+            const colors = ['#6366f1','#10b981','#f59e0b','#a855f7','#00e5ff'];
+            return `
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="font-size:11px;color:var(--text-secondary)">${SKILL_LABELS[i]}</span>
+                  <span style="font-size:11px;font-family:var(--font-mono);color:${colors[i]}">${xp} XP (${pct}%)</span>
+                </div>
+                <div style="height:4px;background:rgba(255,255,255,0.05);border-radius:2px">
+                  <div style="height:4px;border-radius:2px;background:${colors[i]};width:${pct}%;transition:width 0.4s"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+          <div style="margin-top:8px;text-align:right;font-size:11px;font-family:var(--font-mono);color:var(--text-muted)">Total: ${totalXP} XP</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderEnglishPage(state) {
   const container = document.getElementById('englishContent');
   if (!container) return;
@@ -3351,6 +3756,36 @@ function renderEnglishPage(state) {
 
       <div class="audio-archive-list">
         ${renderVoiceArchiveList(state)}
+      </div>
+    </div>
+
+    <!-- V2: Interview Answer Bank -->
+    <div style="margin-top:24px">
+      <div class="section-label" style="margin-bottom:12px">🎤 Interview Answer Bank</div>
+      <div class="card" style="padding:16px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Save your best spoken answers for common interview questions. Practice until fluent.</div>
+        ${[
+          { id: 'intro', q: 'Tell me about yourself & your AI/ML journey' },
+          { id: 'project', q: 'Walk me through your capstone project architecture' },
+          { id: 'bug', q: 'Describe the hardest bug you debugged and how you solved it' },
+          { id: 'decision', q: 'Explain a key technical decision you made and why' },
+          { id: 'failure', q: 'Tell me about a failure or mistake and what you learned' },
+          { id: 'rag', q: 'Explain RAG architecture — retrieval, chunking, embeddings, generation' },
+          { id: 'agent', q: 'How do you build a reliable AI agent with tool calling?' },
+          { id: 'design', q: 'Design a production LLM system — latency, cost, evaluation' }
+        ].map(item => `
+          <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.04)">
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:500;margin-bottom:6px">❓ ${item.q}</div>
+            <textarea 
+              class="notes-area" 
+              style="height:60px;font-size:12px" 
+              placeholder="Write your best answer here... practice speaking it out loud."
+              onblur="window.saveInterviewAnswer('${item.id}', this.value)"
+              id="interview-${item.id}"
+            ></textarea>
+          </div>
+        `).join('')}
+        <button class="btn btn-secondary btn-sm" onclick="window.loadInterviewAnswers()">📂 Load Saved Answers</button>
       </div>
     </div>
   `;
