@@ -2055,6 +2055,256 @@ window.setDayMode = function(mode) {
   showToast(`${DAY_MODES[mode].label} activated`, 'success');
 };
 
+// V2: Focus Session Tracking
+window._sprintInterval = null;
+window._sprintData = null;
+
+window.startFocusSprint = function(workMin, breakMin, category) {
+  if (window._sprintInterval) {
+    showToast('A sprint is already running!', 'warning');
+    return;
+  }
+  const totalSec = workMin * 60;
+  let elapsed = 0;
+  window._sprintData = {
+    category,
+    plannedMinutes: workMin,
+    breakMinutes: breakMin,
+    startedAt: new Date().toISOString(),
+    distractionCount: 0
+  };
+
+  const card = document.getElementById('activeSprintCard');
+  const presets = document.getElementById('sprintPresets');
+  if (card) card.style.display = 'block';
+  if (presets) presets.style.opacity = '0.4';
+
+  window._sprintInterval = setInterval(() => {
+    elapsed++;
+    const remaining = totalSec - elapsed;
+    if (remaining <= 0) {
+      clearInterval(window._sprintInterval);
+      window._sprintInterval = null;
+      window.endFocusSprint(true);
+      return;
+    }
+    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const s = String(remaining % 60).padStart(2, '0');
+    const display = document.getElementById('sprintTimerDisplay');
+    if (display) display.textContent = `${m}:${s}`;
+  }, 1000);
+
+  showToast(`🔥 ${workMin}min sprint started!`, 'success');
+};
+
+window.endFocusSprint = function(auto) {
+  if (window._sprintInterval) {
+    clearInterval(window._sprintInterval);
+    window._sprintInterval = null;
+  }
+  const card = document.getElementById('activeSprintCard');
+  const presets = document.getElementById('sprintPresets');
+  if (card) card.style.display = 'none';
+  if (presets) presets.style.opacity = '1';
+
+  if (!window._sprintData) return;
+  const ended = new Date();
+  const startedAt = new Date(window._sprintData.startedAt);
+  const actualMin = Math.round((ended - startedAt) / 60000);
+
+  // Show confirmation modal
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:#0C1017;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;max-width:360px;width:90%">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Sprint Complete ${auto ? '✅' : '⏹️'}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Actual time: ~${actualMin} minutes</div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--text-muted)">Was this a productive session?</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button onclick="window.confirmSprint(true, ${actualMin})" style="flex:1;padding:8px;border-radius:6px;border:1px solid #10b981;background:rgba(16,185,129,0.1);color:#10b981;cursor:pointer;font-size:12px">✅ Yes, productive</button>
+          <button onclick="window.confirmSprint(false, ${actualMin})" style="flex:1;padding:8px;border-radius:6px;border:1px solid #64748b;background:transparent;color:#64748b;cursor:pointer;font-size:12px">😐 Partially</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--text-muted)">Focus quality (1-5)</label>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${[1,2,3,4,5].map(n => `<button onclick="window._focusRating=${n};this.parentElement.querySelectorAll('button').forEach(b=>b.style.background='transparent');this.style.background='rgba(16,185,129,0.2)'" style="flex:1;padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px">${n}</button>`).join('')}
+        </div>
+      </div>
+      <button onclick="document.body.removeChild(this.closest('[style*=fixed]'))" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px;margin-top:8px">Skip confirmation</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  window._pendingSprintData = { ...window._sprintData, actualMinutes: actualMin, endedAt: ended.toISOString() };
+  window._sprintData = null;
+};
+
+window.confirmSprint = function(productive, actualMin) {
+  const overlay = document.querySelector('[style*="position:fixed"][style*="z-index:9999"]');
+  if (overlay) document.body.removeChild(overlay);
+
+  if (!window._pendingSprintData) return;
+  const session = {
+    ...window._pendingSprintData,
+    completed: productive,
+    focusRating: window._focusRating || 3,
+    actualMinutes: actualMin
+  };
+  window._focusRating = null;
+
+  // Save to state
+  if (window.appState) {
+    if (!window.appState.focusSessions) window.appState.focusSessions = [];
+    window.appState.focusSessions.push(session);
+    if (productive && window.appState.metrics) {
+      window.appState.metrics.verifiedDeepWorkMinutes =
+        (window.appState.metrics.verifiedDeepWorkMinutes || 0) + actualMin;
+    }
+    saveState(window.appState);
+  }
+
+  // Update session log display
+  const log = document.getElementById('sessionLog');
+  if (log) {
+    const total = (window.appState?.focusSessions || []).filter(s => s.completed).length;
+    const totalMin = (window.appState?.focusSessions || []).filter(s => s.completed).reduce((a,s) => a + (s.actualMinutes||0), 0);
+    log.innerHTML = `✅ ${total} sprint(s) completed today — ${Math.floor(totalMin/60)}h ${totalMin%60}m verified deep work`;
+  }
+
+  showToast(`Sprint logged! ${productive ? '+' + actualMin + 'min verified' : 'Partial session saved'}`, 'success');
+  window._pendingSprintData = null;
+};
+
+// V2: Independent Solve & AI Assistance Tracking
+window._solveAttempt = null;
+window._aiLevel = null;
+
+window.setSolveAttempt = function(attempted) {
+  window._solveAttempt = attempted;
+  const yes = document.getElementById('solveYes');
+  const no = document.getElementById('solveNo');
+  if (yes) yes.style.background = attempted ? 'rgba(16,185,129,0.15)' : 'transparent';
+  if (yes) yes.style.borderColor = attempted ? '#10b981' : 'rgba(255,255,255,0.08)';
+  if (no) no.style.background = !attempted ? 'rgba(239,68,68,0.1)' : 'transparent';
+  if (no) no.style.borderColor = !attempted ? '#ef4444' : 'rgba(255,255,255,0.08)';
+  window.updateSolveScore();
+};
+
+window.setAILevel = function(level) {
+  window._aiLevel = level;
+  [0,1,2,3,4,5].forEach(n => {
+    const btn = document.getElementById('aiLevel' + n);
+    if (btn) {
+      btn.style.background = n === level ? 'rgba(99,102,241,0.2)' : 'transparent';
+      btn.style.borderColor = n === level ? '#6366f1' : 'rgba(255,255,255,0.08)';
+      btn.style.color = n === level ? '#6366f1' : 'var(--text-muted)';
+    }
+  });
+  window.updateSolveScore();
+
+  // Save to state
+  if (window.appState) {
+    const dayNum = window.appState.missionDay || window.appState.currentDay;
+    if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+    if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+    window.appState.dailyDrafts[dayNum].aiAssistanceLevel = level;
+    if (!window.appState.metrics) window.appState.metrics = {};
+    window.appState.metrics.aiAssistanceTotal = (window.appState.metrics.aiAssistanceTotal || 0) + level;
+    window.appState.metrics.aiAssistanceCount = (window.appState.metrics.aiAssistanceCount || 0) + 1;
+    saveState(window.appState);
+  }
+};
+
+window.updateSolveScore = function() {
+  const display = document.getElementById('solveScoreDisplay');
+  if (!display) return;
+
+  const attempted = window._solveAttempt;
+  const aiLevel = window._aiLevel;
+
+  if (attempted === null || aiLevel === null) {
+    display.textContent = 'Independent Solve Score: —';
+    return;
+  }
+
+  // Score calculation:
+  // 100=solved independently, 80=syntax help, 60=hints, 40=architecture, 20=partial, 0=generated
+  const baseScores = [100, 80, 60, 40, 20, 0];
+  let score = baseScores[aiLevel];
+  if (!attempted) score = Math.max(0, score - 20); // penalty for not attempting first
+
+  const color = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Assisted' : 'Heavily Assisted';
+
+  display.innerHTML = `Independent Solve Score: <span style="color:${color};font-weight:700">${score}/100</span> — ${label}`;
+
+  // Save score to state
+  if (window.appState) {
+    const dayNum = window.appState.missionDay || window.appState.currentDay;
+    if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+    if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+    window.appState.dailyDrafts[dayNum].solveScore = score;
+    window.appState.dailyDrafts[dayNum].independentAttempt = attempted;
+
+    if (!window.appState.metrics) window.appState.metrics = {};
+    window.appState.metrics.independentSolveAttempts = (window.appState.metrics.independentSolveAttempts || 0) + 1;
+    if (score >= 60) window.appState.metrics.independentSolves = (window.appState.metrics.independentSolves || 0) + 1;
+    saveState(window.appState);
+  }
+};
+
+// V2: English Rubric Scoring
+window._rubricScores = [null, null, null, null, null, null]; // 6 categories
+
+window.setRubricScore = function(categoryIndex, score) {
+  window._rubricScores[categoryIndex] = score;
+
+  // Update button visuals for this category
+  const row = document.getElementById('rubric-' + categoryIndex);
+  if (row) {
+    row.querySelectorAll('button').forEach((btn, i) => {
+      const active = (i + 1) === score;
+      btn.style.background = active ? 'rgba(139,92,246,0.2)' : 'transparent';
+      btn.style.borderColor = active ? '#8b5cf6' : 'rgba(255,255,255,0.06)';
+      btn.style.color = active ? '#a78bfa' : 'var(--text-muted)';
+    });
+  }
+
+  // Update total
+  const filled = window._rubricScores.filter(s => s !== null);
+  const avg = filled.length > 0 ? (filled.reduce((a, b) => a + b, 0) / filled.length).toFixed(1) : null;
+  const total = document.getElementById('englishRubricTotal');
+  if (total && avg) {
+    const color = avg >= 4 ? '#10b981' : avg >= 3 ? '#f59e0b' : '#ef4444';
+    total.innerHTML = `Avg Score: <span style="color:${color};font-weight:700">${avg}</span> / 5.0 ${filled.length === 6 ? '✅ Complete' : `(${filled.length}/6 rated)`}`;
+  }
+
+  // Save to state
+  if (window.appState && filled.length === 6) {
+    const dayNum = window.appState.missionDay || window.appState.currentDay;
+    if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+    if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+    const cats = ['technicalCorrectness', 'clarity', 'grammar', 'vocabulary', 'fillerWords', 'confidence'];
+    cats.forEach((cat, i) => {
+      window.appState.dailyDrafts[dayNum][cat] = window._rubricScores[i];
+    });
+    window.appState.dailyDrafts[dayNum].englishRubricAvg = parseFloat(avg);
+    saveState(window.appState);
+  }
+};
+
+// V2: Save English corrections notes on blur
+window.saveEnglishCorrections = function() {
+  const el = document.getElementById('englishCorrections');
+  if (!el || !window.appState) return;
+  const dayNum = window.appState.missionDay || window.appState.currentDay;
+  if (!window.appState.dailyDrafts) window.appState.dailyDrafts = {};
+  if (!window.appState.dailyDrafts[dayNum]) window.appState.dailyDrafts[dayNum] = {};
+  window.appState.dailyDrafts[dayNum].englishCorrections = el.value;
+  saveState(window.appState);
+};
+
 function renderDayBlocks(dayNum, roadmapDay, state) {
   const topics = (roadmapDay?.topics || []).map(t => `<li class="sq-item"><span class="sq-bullet">▸</span>${t}</li>`).join('');
   const studyQs = (roadmapDay?.studyQuestions || roadmapDay?.reviewQuestions || [])
@@ -2065,6 +2315,11 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
   const currentMode = (state.targetMode) || 'standard';
   const reqs = getCompletionRequirements(currentMode, roadmapDay);
   const validation = validateDayCompletion(currentLog, reqs);
+
+  // V2: Adaptive English duration based on mission phase
+  const missionDay = state.missionDay || dayNum;
+  const englishTargetMin = missionDay <= 30 ? 30 : missionDay <= 60 ? 45 : 60;
+  const englishPhaseLabel = missionDay <= 30 ? 'Phase 1: Foundation (30min)' : missionDay <= 60 ? 'Phase 2: Intermediate (45min)' : 'Phase 3: Advanced (60min)';
 
   return `
   <div class="dashboard-grid fade-in" style="margin-bottom:24px">
@@ -2120,6 +2375,26 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
               <label class="form-label">🔗 GitHub Commit / PR Link</label>
               <input class="evidence-input" id="githubLink" type="url" placeholder="https://github.com/username/repo/commit/abc123">
             </div>
+            <!-- V2: Focus Sprint Tracker -->
+            <div class="form-group" style="margin-top:16px">
+              <div class="section-label" style="margin-bottom:10px">⏱️ Focus Sprint Tracker</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px" id="sprintPresets">
+                <button onclick="startFocusSprint(25,5,'build')" class="btn btn-secondary btn-sm" style="font-size:11px">25/5</button>
+                <button onclick="startFocusSprint(50,10,'build')" class="btn btn-secondary btn-sm" style="font-size:11px">50/10</button>
+                <button onclick="startFocusSprint(75,15,'build')" class="btn btn-secondary btn-sm" style="font-size:11px">75/15</button>
+                <button onclick="startFocusSprint(90,15,'build')" class="btn btn-secondary btn-sm" style="font-size:11px">90/15</button>
+              </div>
+              <div id="activeSprintCard" style="display:none;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">ACTIVE SPRINT</div>
+                    <div id="sprintTimerDisplay" style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:#10b981">00:00</div>
+                  </div>
+                  <button onclick="endFocusSprint()" class="btn btn-secondary btn-sm" style="font-size:11px">End Sprint</button>
+                </div>
+              </div>
+              <div id="sessionLog" style="margin-top:8px;font-size:11px;color:var(--text-muted)"></div>
+            </div>
           </div>
         </div>
 
@@ -2140,6 +2415,29 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
               <label class="form-label">⚡ Practice Notes & Solutions</label>
               <textarea class="notes-area" id="practiceNotes" placeholder="What problems did you solve? What patterns did you discover? What did you get wrong first?"></textarea>
             </div>
+            <!-- V2: Independent Solve & AI Assistance -->
+            <div style="margin-top:12px">
+              <div class="section-label" style="margin-bottom:8px">🎯 Independent Solve Tracker</div>
+              <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px">
+                <div style="margin-bottom:10px">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Did you attempt before looking at AI/tutorials?</div>
+                  <div style="display:flex;gap:6px">
+                    <button onclick="setSolveAttempt(true)" id="solveYes" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px">✅ Yes, attempted first</button>
+                    <button onclick="setSolveAttempt(false)" id="solveNo" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px">⚡ Jumped to AI</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">AI Assistance Level (0=None → 5=Full generation)</div>
+                  <div style="display:flex;gap:4px">
+                    ${[0,1,2,3,4,5].map(n => {
+                      const labels = ['0\nNone','1\nSyntax','2\nHints','3\nArch','4\nPartial','5\nGenerated'];
+                      return `<button onclick="setAILevel(${n})" id="aiLevel${n}" title="${['No AI','Syntax/docs help','Hints only','Architecture help','Partial implementation','Generated solution'][n]}" style="flex:1;padding:6px 2px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-muted);cursor:pointer;font-size:10px;white-space:pre;line-height:1.2">${labels[n]}</button>`;
+                    }).join('')}
+                  </div>
+                </div>
+                <div id="solveScoreDisplay" style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:center">Independent Solve Score: — </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2149,7 +2447,7 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
             <div class="block-number block-num-4">B4</div>
             <div class="block-info">
               <div class="block-name">English Mastery &amp; Feynman Voice</div>
-              <div class="block-duration">2h • Technical Speech &amp; Spoken Interview Fluency</div>
+              <div class="block-duration">${englishTargetMin}min • ${englishPhaseLabel}</div>
             </div>
             <span class="block-status-icon" id="b4-icon">🔒</span>
           </div>
@@ -2173,6 +2471,30 @@ function renderDayBlocks(dayNum, roadmapDay, state) {
                   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
                     <button class="btn btn-secondary btn-sm" id="voiceDownload" style="display:none">⬇️ Download</button>
                     <button class="btn btn-secondary btn-sm" id="voiceUpload" style="display:none">☁️ Upload to Cloud</button>
+                  </div>
+                </div>
+
+                <!-- V2: English Rubric & 2-Stage Flow -->
+                <div style="margin-top:14px">
+                  <div class="section-label" style="margin-bottom:8px">📊 English Performance Rubric</div>
+                  <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Rate your <strong>first recording</strong> after listening back (1=Poor → 5=Excellent)</div>
+                    ${['Technical Accuracy', 'Clarity & Structure', 'Grammar', 'Vocabulary', 'Filler Words (5=none)', 'Confidence & Pace'].map((cat, i) => `
+                      <div style="margin-bottom:10px">
+                        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${cat}</div>
+                        <div style="display:flex;gap:4px" id="rubric-${i}">
+                          ${[1,2,3,4,5].map(n => `<button onclick="setRubricScore(${i}, ${n})" style="flex:1;padding:5px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px">${n}</button>`).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                    <div id="englishRubricTotal" style="margin-top:8px;padding:8px;background:rgba(139,92,246,0.08);border-radius:6px;font-size:12px;color:#a78bfa;text-align:center">
+                      Avg Score: — / 5.0
+                    </div>
+                    <div style="margin-top:10px">
+                      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">3 problems I identified in my first recording:</div>
+                      <textarea id="englishCorrections" class="notes-area" style="height:60px;font-size:12px" placeholder="1. Used 'basically' too many times&#10;2. Unclear explanation of embeddings&#10;3. Too fast on technical terms" onblur="saveEnglishCorrections()"></textarea>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">→ Now re-record a shorter, improved version addressing these issues.</div>
                   </div>
                 </div>
 
